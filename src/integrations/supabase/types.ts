@@ -14,7 +14,301 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      form_settings: {
+        Row: {
+          enabled_units: string[] | null
+          form_type: string
+          id: string
+          is_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          enabled_units?: string[] | null
+          form_type: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          enabled_units?: string[] | null
+          form_type?: string
+          id?: string
+          is_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news: {
+        Row: {
+          author_type: string
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_type?: string
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_type?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      polls: {
+        Row: {
+          allow_multiple_votes: boolean
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          options: Json
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          allow_multiple_votes?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          options?: Json
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          allow_multiple_votes?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          options?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      task_submissions: {
+        Row: {
+          id: string
+          proof: string
+          status: string
+          submitted_at: string
+          task_id: string
+          unit_id: string
+        }
+        Insert: {
+          id?: string
+          proof: string
+          status?: string
+          submitted_at?: string
+          task_id: string
+          unit_id: string
+        }
+        Update: {
+          id?: string
+          proof?: string
+          status?: string
+          submitted_at?: string
+          task_id?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_submissions_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          category: string
+          created_at: string
+          deadline: string
+          description: string | null
+          difficulty: string
+          id: string
+          points: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          deadline: string
+          description?: string | null
+          difficulty?: string
+          id?: string
+          points: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          deadline?: string
+          description?: string | null
+          difficulty?: string
+          id?: string
+          points?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      unit_info: {
+        Row: {
+          counselors: string[] | null
+          id: string
+          pathfinders: string[] | null
+          unit_id: string
+          unit_motto: string | null
+          updated_at: string
+        }
+        Insert: {
+          counselors?: string[] | null
+          id?: string
+          pathfinders?: string[] | null
+          unit_id: string
+          unit_motto?: string | null
+          updated_at?: string
+        }
+        Update: {
+          counselors?: string[] | null
+          id?: string
+          pathfinders?: string[] | null
+          unit_id?: string
+          unit_motto?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unit_info_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: true
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      units: {
+        Row: {
+          created_at: string
+          id: string
+          logo: string | null
+          name: string
+          password: string
+          score: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo?: string | null
+          name: string
+          password: string
+          score?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo?: string | null
+          name?: string
+          password?: string
+          score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      weekly_attendances: {
+        Row: {
+          brought_bible: boolean
+          brought_flag: boolean
+          date: string
+          id: string
+          neckerchief_count: number
+          photo_url: string | null
+          present_members: string[] | null
+          punctual_count: number
+          score: number
+          status: string
+          submitted_at: string
+          uniform_count: number
+          unit_id: string
+        }
+        Insert: {
+          brought_bible?: boolean
+          brought_flag?: boolean
+          date: string
+          id?: string
+          neckerchief_count?: number
+          photo_url?: string | null
+          present_members?: string[] | null
+          punctual_count?: number
+          score?: number
+          status?: string
+          submitted_at?: string
+          uniform_count?: number
+          unit_id: string
+        }
+        Update: {
+          brought_bible?: boolean
+          brought_flag?: boolean
+          date?: string
+          id?: string
+          neckerchief_count?: number
+          photo_url?: string | null
+          present_members?: string[] | null
+          punctual_count?: number
+          score?: number
+          status?: string
+          submitted_at?: string
+          uniform_count?: number
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_attendances_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
