@@ -1,0 +1,63 @@
+{
+  "name": "Ranking Unidade",
+  "short_name": "Ranking Unidade",
+  "description": "Acompanhe sua unidade, tarefas e pontuações no ranking",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#f8100e",
+  "background_color": "#ffffff",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/KYU3KX5.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "https://i.imgur.com/KYU3KX5.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "https://i.imgur.com/KYU3KX5.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "https://i.imgur.com/KYU3KX5.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "lang": "pt-BR",
+  "shortcuts": [
+    {
+      "name": "Minha Unidade",
+      "short_name": "Unidade",
+      "description": "Acesse o dashboard da sua unidade",
+      "url": "/unit-dashboard",
+      "icons": [
+        {
+          "src": "https://i.imgur.com/KYU3KX5.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Ranking",
+      "short_name": "Ranking",
+      "description": "Ver ranking completo das unidades",
+      "url": "/",
+      "icons": [
+        {
+          "src": "https://i.imgur.com/KYU3KX5.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
