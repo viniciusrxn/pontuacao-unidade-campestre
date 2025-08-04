@@ -2,58 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://tmhkprlaefcqlgxjgkqp.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtaGtwcmxhZWZjcWxneGpna3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc2NjQ2MTQsImV4cCI6MjA2MzI0MDYxNH0.d4HBeQpdK5ZnP01MLbEMgGMqStGy0OJE2_yajUKrHVg";
+const SUPABASE_URL = "https://oovafszgxwubkgymvawh.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vdmFmc3pneHd1YmtneW12YXdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQzMzQ4ODQsImV4cCI6MjA2OTkxMDg4NH0.ncyMmgzYM68ADGJYqox7W0e7O8AHzdpn6sblAoAz_BM";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-// Create Supabase client
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-// Function to get current session token (for authenticated operations)
-const getSessionToken = (): string => {
-  const adminSession = localStorage.getItem('adminAuthSession');
-  const unitSession = localStorage.getItem('authSession');
-  
-  if (adminSession) {
-    try {
-      const parsed = JSON.parse(adminSession);
-      if (Date.now() < parsed.expiresAt) {
-        return `admin-${parsed.timestamp}`;
-      }
-    } catch (e) {
-      console.error('Error parsing admin session:', e);
-    }
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    storage: localStorage,
+    persistSession: true,
+    autoRefreshToken: true,
   }
-  
-  if (unitSession) {
-    try {
-      const parsed = JSON.parse(unitSession);
-      if (Date.now() < parsed.expiresAt) {
-        return `unit-${parsed.user.unitId}-${parsed.timestamp}`;
-      }
-    } catch (e) {
-      console.error('Error parsing unit session:', e);
-    }
-  }
-  
-  return '';
-};
-
-// Function to create authenticated client for specific operations
-export const createAuthenticatedSupabase = () => {
-  const sessionToken = getSessionToken();
-  
-  if (sessionToken) {
-    return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-      global: {
-        headers: {
-          'x-session-token': sessionToken
-        }
-      }
-    });
-  }
-  
-  return supabase;
-};
+});
