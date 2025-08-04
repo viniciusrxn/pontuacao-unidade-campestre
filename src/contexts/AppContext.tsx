@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase, createAuthenticatedSupabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   User,
   Unit, 
@@ -148,8 +148,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     // Fetch functions
     const fetchUnits = async () => {
       try {
-        // Use authenticated client if admin is logged in for better data access
-        const client = currentUser?.type === 'admin' ? createAuthenticatedSupabase() : supabase;
+        const client = supabase;
         const { data, error } = await client.from('units').select('*');
         if (error) throw error;
         const transformedUnits = (data || []).map(transformUnit);
@@ -161,8 +160,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     const fetchTasks = async () => {
       try {
-        // Use authenticated client if admin is logged in for better data access
-        const client = currentUser?.type === 'admin' ? createAuthenticatedSupabase() : supabase;
+        const client = supabase;
         const { data, error } = await client.from('tasks').select('*');
         if (error) throw error;
         const transformedTasks = (data || []).map(transformTask);
@@ -340,7 +338,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       category?: string;
     }): Promise<void> => {
       try {
-        const client = createAuthenticatedSupabase();
+        const client = supabase;
         const { data, error } = await client
           .from('tasks')
           .insert([
@@ -439,7 +437,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     const updateUnitScore = async (unitId: string, newScore: number) => {
       try {
-        const client = createAuthenticatedSupabase();
+        const client = supabase;
         const { error } = await client
           .from('units')
           .update({ score: newScore })
