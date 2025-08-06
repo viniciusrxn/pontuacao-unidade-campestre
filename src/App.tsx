@@ -15,6 +15,7 @@ import WeeklyAttendanceHistory from "./pages/WeeklyAttendanceHistory";
 import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/InstallPrompt";
 import SystemHealthCheck from "./components/SystemHealthCheck";
+import NewsTestComponent from "./components/NewsTestComponent";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => {
               <Route path="/weekly-attendance" element={<WeeklyAttendance />} />
               <Route path="/weekly-attendance-history" element={<WeeklyAttendanceHistory />} />
               <Route path="/health-check" element={<SystemHealthCheck />} />
+              <Route path="/news-test" element={<NewsTestComponent />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

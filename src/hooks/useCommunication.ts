@@ -42,7 +42,7 @@ export const useCommunication = () => {
   const fetchNews = async () => {
     try {
       const { data, error } = await supabase
-        .from('news_feed')
+        .from('news')
         .select('*')
         .eq('status', 'published')
         .order('is_pinned', { ascending: false })
@@ -73,22 +73,36 @@ export const useCommunication = () => {
   // Admin functions
   const createNewsItem = async (title: string, content: string, isPinned = false) => {
     try {
+      console.log('Creating news item:', { title, content, isPinned });
+      
       const { data, error } = await supabase
-        .from('news_feed')
+        .from('news')
         .insert({
-          title,
-          content,
+          title: title.trim(),
+          content: content.trim(),
           is_pinned: isPinned,
-          status: 'published'
+          status: 'published',
+          author_type: 'admin'
         })
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('News creation result:', { data, error });
+
+      if (error) {
+        console.error('Supabase error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
+      
       await fetchNews();
       return data;
     } catch (error) {
-      console.error('Error creating news item:', error);
+      console.error('Error creating news item - Full error:', error);
       throw error;
     }
   };
@@ -96,7 +110,7 @@ export const useCommunication = () => {
   const deleteNewsItem = async (newsId: string) => {
     try {
       const { error } = await supabase
-        .from('news_feed')
+        .from('news')
         .delete()
         .eq('id', newsId);
 
