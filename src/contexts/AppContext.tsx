@@ -52,7 +52,7 @@ interface AppContextType {
   updateUnitScore: (unitId: string, newScore: number) => Promise<void>;
   updateUnitLogo: (unitId: string, newLogo: string) => Promise<void>;
   submitWeeklyAttendance: (attendance: Omit<WeeklyAttendance, 'id' | 'submittedAt' | 'status'>) => Promise<boolean>;
-  validateAttendance: (attendanceId: string, approved: boolean) => Promise<void>;
+  validateAttendance: (attendanceId: string, approved: boolean, customScore?: number) => Promise<void>;
   toggleAttendanceFormAvailability: (enabled: boolean, enabledUnits?: string[]) => Promise<boolean>;
   resetAllStatistics: () => Promise<boolean>;
   fetchUnits: () => Promise<void>;
@@ -502,15 +502,21 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }
     };
 
-    const validateAttendance = async (attendanceId: string, approved: boolean) => {
+    const validateAttendance = async (attendanceId: string, approved: boolean, customScore?: number) => {
       try {
         const attendance = attendances.find(a => a.id === attendanceId);
         if (!attendance) return;
 
-        // Update attendance status
+        // Use custom score if provided, otherwise use original score
+        const finalScore = customScore !== undefined ? customScore : attendance.score;
+
+        // Update attendance status and score in database
         const { error: attendanceError } = await supabase
           .from('weekly_attendances')
-          .update({ status: approved ? 'validated' : 'rejected' })
+          .update({ 
+            status: approved ? 'validated' : 'rejected',
+            score: finalScore
+          })
           .eq('id', attendanceId);
 
         if (attendanceError) throw attendanceError;
@@ -519,7 +525,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         if (approved) {
           const unit = units.find(u => u.id === attendance.unitId);
           if (unit) {
-            await updateUnitScore(unit.id, unit.score + attendance.score);
+            await updateUnitScore(unit.id, unit.score + finalScore);
           }
         }
 

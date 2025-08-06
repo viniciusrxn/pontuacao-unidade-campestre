@@ -84,9 +84,11 @@ const WeeklyAttendanceHistory = () => {
                       })}
                     </CardTitle>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm md:text-base font-bold">
-                        {attendance.score} pontos
-                      </span>
+                      {attendance.status === 'validated' && (
+                        <span className="text-sm md:text-base font-bold text-green-600">
+                          {attendance.score} pontos
+                        </span>
+                      )}
                       {attendance.status === 'pending' && (
                         <div className="bg-yellow-100 text-yellow-800 px-2 py-1 text-xs rounded-full">
                           Pendente

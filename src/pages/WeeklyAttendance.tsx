@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Form, 
   FormControl, 
@@ -18,14 +19,14 @@ import {
 import { useAppContext } from '../contexts/AppContext';
 import { useToast } from '@/components/ui/use-toast';
 import { useForm } from 'react-hook-form';
-import { Clock, User, Shirt, Flag, Book, Upload, Image, AlertCircle } from 'lucide-react';
+import { Clock, User, Shirt, Flag, Book, Upload, Image, AlertCircle, Plus, X } from 'lucide-react';
 import { Award } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type FormValues = {
-  presentMembers: string;
+  presentMembers: string[];
   punctualCount: number;
   neckerchiefCount: number;
   uniformCount: number;
@@ -52,7 +53,7 @@ const WeeklyAttendance = () => {
   // Form setup
   const form = useForm<FormValues>({
     defaultValues: {
-      presentMembers: '',
+      presentMembers: [''],
       punctualCount: 0,
       neckerchiefCount: 0,
       uniformCount: 0,
@@ -121,6 +122,27 @@ const WeeklyAttendance = () => {
     }
   };
 
+  // Handle dynamic member list
+  const addMemberField = () => {
+    const currentMembers = form.getValues('presentMembers');
+    form.setValue('presentMembers', [...currentMembers, '']);
+  };
+
+  const removeMemberField = (index: number) => {
+    const currentMembers = form.getValues('presentMembers');
+    if (currentMembers.length > 1) {
+      const newMembers = currentMembers.filter((_, i) => i !== index);
+      form.setValue('presentMembers', newMembers);
+    }
+  };
+
+  const updateMemberField = (index: number, value: string) => {
+    const currentMembers = form.getValues('presentMembers');
+    const newMembers = [...currentMembers];
+    newMembers[index] = value;
+    form.setValue('presentMembers', newMembers);
+  };
+
   const onSubmit = async (data: FormValues) => {
     // Prevent submission if form is disabled
     if (!formEnabled) {
@@ -136,21 +158,13 @@ const WeeklyAttendance = () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     
-    // Split the comma-separated names into an array and clean them
+    // Filter out empty member names
     const presentMemberArray = data.presentMembers
-      .split(',')
       .map(name => name.trim())
       .filter(name => name !== '');
 
-    // Calculate score based on attendance data
-    const baseScore = presentMemberArray.length * 2; // 2 points per person
-    const punctualityBonus = data.punctualCount * 1; // 1 point per punctual person
-    const neckerchiefBonus = data.neckerchiefCount * 1; // 1 point per neckerchief
-    const uniformBonus = data.uniformCount * 1; // 1 point per uniform
-    const flagBonus = data.broughtFlag ? 5 : 0; // 5 points for flag
-    const bibleBonus = data.broughtBible ? 5 : 0; // 5 points for bible
-    
-    const totalScore = baseScore + punctualityBonus + neckerchiefBonus + uniformBonus + flagBonus + bibleBonus;
+    // Score is not calculated automatically anymore
+    const totalScore = 0;
 
     // Submit attendance data
     const success = await submitWeeklyAttendance({
@@ -174,7 +188,14 @@ const WeeklyAttendance = () => {
       });
       
       // Reset form
-      form.reset();
+      form.reset({
+        presentMembers: [''],
+        punctualCount: 0,
+        neckerchiefCount: 0,
+        uniformCount: 0,
+        broughtFlag: false,
+        broughtBible: false,
+      });
       setSelectedFile(null);
       setPreviewUrl(null);
       setImageError(null);
@@ -244,28 +265,51 @@ const WeeklyAttendance = () => {
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="presentMembers"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <User className="w-4 h-4 md:w-5 md:h-5" /> Membros Presentes
-                        </FormLabel>
-                        <FormControl>
-                          <textarea
-                            className="w-full min-h-[100px] p-3 border border-gray-300 rounded-md"
-                            placeholder="Digite os nomes dos membros presentes, separados por vírgula"
-                            {...field}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="flex items-center gap-2">
+                        <User className="w-4 h-4 md:w-5 md:h-5" /> Membros Presentes
+                      </FormLabel>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addMemberField}
+                        className="flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Adicionar
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {form.watch('presentMembers').map((member, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <Input
+                            placeholder={`Nome do membro ${index + 1}`}
+                            value={member}
+                            onChange={(e) => updateMemberField(index, e.target.value)}
+                            className="flex-1"
                           />
-                        </FormControl>
-                        <FormDescription>
-                          Liste os nomes separados por vírgula, ex: João, Maria, Pedro
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          {form.watch('presentMembers').length > 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeMemberField(index)}
+                              className="p-2"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <FormDescription>
+                      Adicione os nomes dos membros presentes. Use o botão "+" para adicionar mais campos.
+                    </FormDescription>
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
@@ -277,15 +321,24 @@ const WeeklyAttendance = () => {
                             <Clock className="w-4 h-4 md:w-5 md:h-5" /> Pontuais
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              {...field}
-                              onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                            />
+                            <Select 
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                              value={field.value.toString()}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a quantidade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 11 }, (_, i) => (
+                                  <SelectItem key={i} value={i.toString()}>
+                                    {i}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </FormControl>
                           <FormDescription>
-                            Número de membros que chegaram no horário
+                            Número de membros que chegaram no horário (0-10)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -301,15 +354,24 @@ const WeeklyAttendance = () => {
                             <Award className="w-4 h-4 md:w-5 md:h-5" /> Lenço
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              {...field}
-                              onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                            />
+                            <Select 
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                              value={field.value.toString()}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a quantidade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 13 }, (_, i) => (
+                                  <SelectItem key={i} value={i.toString()}>
+                                    {i}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </FormControl>
                           <FormDescription>
-                            Número de membros usando o lenço
+                            Número de membros usando o lenço (0-12)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -325,15 +387,24 @@ const WeeklyAttendance = () => {
                             <Shirt className="w-4 h-4 md:w-5 md:h-5" /> Uniforme
                           </FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              min="0"
-                              {...field}
-                              onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                            />
+                            <Select 
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                              value={field.value.toString()}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a quantidade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 13 }, (_, i) => (
+                                  <SelectItem key={i} value={i.toString()}>
+                                    {i}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </FormControl>
                           <FormDescription>
-                            Número de membros com uniforme completo
+                            Número de membros com uniforme completo (0-12)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

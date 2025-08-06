@@ -71,9 +71,11 @@ const AdminDashboard = () => {
 
   // Task deletion state
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
-
+  
   // Attendance score edit state
   const [editingAttendanceScores, setEditingAttendanceScores] = useState<Record<string, number>>({});
+
+
 
   // Form control states
   const [selectedUnits, setSelectedUnits] = useState<Record<string, boolean>>({});
@@ -257,23 +259,27 @@ const AdminDashboard = () => {
     });
   };
   const handleValidateAttendance = (attendance: WeeklyAttendance, approved: boolean) => {
-    if (editingAttendanceScores[attendance.id]) {
-      const updatedAttendance = {
-        ...attendance,
-        score: editingAttendanceScores[attendance.id]
-      };
-      validateAttendance(updatedAttendance.id, approved);
-    } else {
-      validateAttendance(attendance.id, approved);
-    }
-    const newEditingScores = {
-      ...editingAttendanceScores
+    // If admin has set a custom score, use it; otherwise use the original score
+    const finalScore = editingAttendanceScores[attendance.id] !== undefined 
+      ? editingAttendanceScores[attendance.id] 
+      : attendance.score;
+    
+    // Create updated attendance with the final score
+    const updatedAttendance = {
+      ...attendance,
+      score: finalScore
     };
+    
+    validateAttendance(updatedAttendance.id, approved, finalScore);
+    
+    // Clean up editing state
+    const newEditingScores = { ...editingAttendanceScores };
     delete newEditingScores[attendance.id];
     setEditingAttendanceScores(newEditingScores);
+    
     toast({
-      title: approved ? "Attendance approved!" : "Attendance rejected",
-      description: approved ? "Pontos foram atribuídos à unidade." : "O registro de presença foi rejeitado.",
+      title: approved ? "Presença aprovada!" : "Presença rejeitada",
+      description: approved ? `O registro foi aprovado e ${finalScore} pontos foram atribuídos à unidade.` : "O registro de presença foi rejeitado.",
       variant: approved ? "default" : "destructive"
     });
   };
@@ -343,17 +349,26 @@ const AdminDashboard = () => {
       });
     }
   };
+
+  // Handle attendance score editing
   const initAttendanceScoreEdit = (attendance: WeeklyAttendance) => {
     setEditingAttendanceScores(prev => ({
       ...prev,
-      [attendance.id]: attendance.score
+      [attendance.id]: attendance.score || 0
     }));
   };
+
   const handleAttendanceScoreChange = (attendanceId: string, newScore: number) => {
     setEditingAttendanceScores(prev => ({
       ...prev,
       [attendanceId]: newScore
     }));
+  };
+
+  const cancelAttendanceScoreEdit = (attendanceId: string) => {
+    const newEditingScores = { ...editingAttendanceScores };
+    delete newEditingScores[attendanceId];
+    setEditingAttendanceScores(newEditingScores);
   };
 
   // Handle task deletion
@@ -517,9 +532,6 @@ const AdminDashboard = () => {
                     <CardHeader className="p-3 sm:p-6">
                       <CardTitle className="flex justify-between text-base sm:text-lg">
                         <span className="truncate mr-2">Presença: {getUnitName(attendance.unitId)}</span>
-                        <span className="text-success whitespace-nowrap">
-                          {editingAttendanceScores[attendance.id] !== undefined ? `${editingAttendanceScores[attendance.id]} pts` : `${attendance.score} pts`}
-                        </span>
                       </CardTitle>
                       <CardDescription className="text-xs sm:text-sm">
                         <div className="flex flex-col sm:flex-row sm:justify-between">
@@ -573,27 +585,48 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Score editing section */}
-                        {editingAttendanceScores[attendance.id] !== undefined ? <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                            <Label htmlFor={`edit-score-${attendance.id}`} className="mb-1 sm:mb-2 block text-xs sm:text-sm">
-                              Editar pontuação:
-                            </Label>
-                            <div className="flex gap-2">
-                              <Input id={`edit-score-${attendance.id}`} type="number" className="w-16 sm:w-24 text-xs sm:text-sm" value={editingAttendanceScores[attendance.id]} onChange={e => handleAttendanceScoreChange(attendance.id, parseInt(e.target.value) || 0)} />
-                              <Button size="sm" variant="outline" onClick={() => {
-                        const newEditingScores = {
-                          ...editingAttendanceScores
-                        };
-                        delete newEditingScores[attendance.id];
-                        setEditingAttendanceScores(newEditingScores);
-                      }} className="text-xs sm:text-sm">
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-medium">Pontuação da Presença</h4>
+                            <span className="text-sm text-gray-600">
+                              Atual: {editingAttendanceScores[attendance.id] !== undefined ? editingAttendanceScores[attendance.id] : attendance.score} pontos
+                            </span>
+                          </div>
+                          
+                          {editingAttendanceScores[attendance.id] !== undefined ? (
+                            <div className="flex gap-2 items-center">
+                              <Input
+                                type="number"
+                                min="0"
+                                className="w-20 text-sm"
+                                value={editingAttendanceScores[attendance.id]}
+                                onChange={(e) => handleAttendanceScoreChange(attendance.id, parseInt(e.target.value) || 0)}
+                                placeholder="0"
+                              />
+                              <span className="text-sm text-gray-600">pontos</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => cancelAttendanceScoreEdit(attendance.id)}
+                                className="text-xs"
+                              >
                                 Cancelar
                               </Button>
                             </div>
-                          </div> : <Button size="sm" variant="outline" onClick={() => initAttendanceScoreEdit(attendance)} className="mt-2 text-xs sm:text-sm">
-                            Editar Pontuação
-                          </Button>}
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => initAttendanceScoreEdit(attendance)}
+                              className="text-xs"
+                            >
+                              Definir Pontuação
+                            </Button>
+                          )}
+                        </div>
+
                       </div>
                       <div className="flex gap-2 sm:gap-3 justify-end">
                         <Button onClick={() => handleValidateAttendance(attendance, true)} className="bg-success text-white text-xs sm:text-sm px-2 sm:px-3" size="sm">
