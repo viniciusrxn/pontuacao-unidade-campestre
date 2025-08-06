@@ -14,6 +14,7 @@ import WeeklyAttendance from "./pages/WeeklyAttendance";
 import WeeklyAttendanceHistory from "./pages/WeeklyAttendanceHistory";
 import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/InstallPrompt";
+import SystemHealthCheck from "./components/SystemHealthCheck";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => {
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/weekly-attendance" element={<WeeklyAttendance />} />
               <Route path="/weekly-attendance-history" element={<WeeklyAttendanceHistory />} />
+              <Route path="/health-check" element={<SystemHealthCheck />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
