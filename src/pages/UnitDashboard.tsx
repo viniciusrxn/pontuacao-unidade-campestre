@@ -16,12 +16,12 @@ import DifficultyBadge from '@/components/DifficultyBadge';
 import TaskCategoryBadge from '@/components/TaskCategoryBadge';
 import UnitProgress from '@/components/UnitProgress';
 import NewsFeed from '@/components/NewsFeed';
-import PollsComponent from '@/components/PollsComponent';
+
 import UnitInfoManager from '@/components/UnitInfoManager';
 
 const UnitDashboard = () => {
   const { currentUser, units, tasks, submissions, submitTask } = useAppContext();
-  const { news, polls } = useCommunication();
+  const { news } = useCommunication();
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -29,7 +29,7 @@ const UnitDashboard = () => {
   const [submissionProof, setSubmissionProof] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showNews, setShowNews] = useState(true);
-  const [showPolls, setShowPolls] = useState(true);
+
 
   // Redireciona se não estiver logado como unidade
   React.useEffect(() => {
@@ -256,32 +256,7 @@ const UnitDashboard = () => {
           </div>
         )}
 
-        {/* Seção de Enquetes - com opção de esconder */}
-        {polls.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Enquetes
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowPolls(!showPolls)}
-                className="flex items-center gap-1"
-              >
-                {showPolls ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                {showPolls ? 'Ocultar' : 'Mostrar'}
-              </Button>
-            </div>
-            {showPolls && (
-              <PollsComponent 
-                polls={polls} 
-                unitId={currentUser.unitId} 
-              />
-            )}
-          </div>
-        )}
+
 
         {/* Seção para presença semanal */}
         <div className="mb-6">
@@ -289,7 +264,7 @@ const UnitDashboard = () => {
             <CardHeader className="pb-2 md:pb-3">
               <CardTitle className="text-lg md:text-xl flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-purple-500" />
-                Presença Semanal
+                Cantinho da Unidade
               </CardTitle>
               <CardDescription>Registre a presença da sua unidade aos sábados para ganhar pontos</CardDescription>
             </CardHeader>

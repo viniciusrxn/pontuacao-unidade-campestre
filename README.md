@@ -14,7 +14,7 @@ O **Ranking Unidade** é um sistema completo de gamificação para competições
 - **📊 Ranking Dinâmico**: Leaderboard com pódio 3D e rastreamento de posições
 - **✅ Sistema de Tarefas**: Criação, submissão e validação de atividades
 - **📅 Controle de Presença**: Formulário semanal com pontuação automática
-- **📰 Comunicação**: Feed de notícias e sistema de enquetes
+- **📰 Comunicação**: Feed de notícias
 - **📱 PWA**: Instalável em dispositivos móveis como app nativo
 - **🔒 Segurança**: Row Level Security (RLS) e autenticação robusta
 
@@ -50,7 +50,7 @@ O **Ranking Unidade** é um sistema completo de gamificação para competições
 
 ### Sistema de Comunicação
 - **Feed de notícias** com posts fixados
-- **Enquetes interativas** com resultados em tempo real
+
 - **Notificações** em tempo real
 
 ### Painel Administrativo

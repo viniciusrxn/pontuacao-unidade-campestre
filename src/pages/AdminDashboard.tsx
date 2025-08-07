@@ -10,13 +10,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select } from '@/components/ui/select';
 import { SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Clock, Check, X, Award, Shirt, Flag, User, Trash2, Image, Lock, Unlock, Settings, Book, RotateCcw, Newspaper, BarChart3, Users, Info, Inbox, FileText, CheckSquare, BarChart2, PieChart } from 'lucide-react';
+import { Clock, Check, X, Award, Shirt, Flag, User, Trash2, Image, Lock, Unlock, Settings, Book, RotateCcw, Newspaper, BarChart3, Users, Info, Inbox, FileText, CheckSquare, BarChart2 } from 'lucide-react';
 import { TaskSubmission, WeeklyAttendance } from '@/types';
 import UnitDisplay from '@/components/UnitDisplay';
 import UnitManagement from '@/components/UnitManagement';
 import UnitInfoManager from '@/components/UnitInfoManager';
 import AdminNewsManager from '@/components/AdminNewsManager';
-import AdminPollManager from '@/components/AdminPollManager';
+
 import AdminPasswordPrompt from '@/components/AdminPasswordPrompt';
 import { useAppContext } from '@/contexts/AppContext';
 import { useCommunication } from '@/hooks/useCommunication';
@@ -44,8 +44,7 @@ const AdminDashboard = () => {
     fetchUnits
   } = useAppContext();
   const {
-    news,
-    polls
+    news
   } = useCommunication();
   const navigate = useNavigate();
   const {
@@ -453,10 +452,7 @@ const AdminDashboard = () => {
               <Newspaper className="w-6 h-6" />
               <span className="text-xs font-medium text-center">Notícias</span>
             </TabsTrigger>
-            <TabsTrigger value="polls" onClick={() => scrollToSection("polls")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
-              <PieChart className="w-6 h-6" />
-              <span className="text-xs font-medium text-center">Enquetes</span>
-            </TabsTrigger>
+
             <TabsTrigger value="tasks" onClick={() => scrollToSection("tasks")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
               <CheckSquare className="w-6 h-6" />
               <span className="text-xs font-medium text-center">Tarefas</span>
@@ -975,10 +971,7 @@ const AdminDashboard = () => {
             <AdminNewsManager news={news} />
           </TabsContent>
           
-          {/* Polls Management Tab */}
-          <TabsContent value="polls" id="polls" className="mt-6">
-            <AdminPollManager polls={polls} />
-          </TabsContent>
+
         </Tabs>
       </div>
 

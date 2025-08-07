@@ -59,7 +59,7 @@ Esta pasta contém toda a documentação técnica do projeto Ranking Unidade, or
 | **Tasks** | [API_REFERENCE.md](API_REFERENCE.md#tasks) |
 | **Presença Semanal** | [API_REFERENCE.md](API_REFERENCE.md#weekly-attendances) |
 | **Notícias** | [API_REFERENCE.md](API_REFERENCE.md#news-feed) |
-| **Enquetes** | [API_REFERENCE.md](API_REFERENCE.md#polls) |
+
 | **Real-time** | [API_REFERENCE.md](API_REFERENCE.md#real-time-subscriptions) |
 
 ### Por Tecnologia

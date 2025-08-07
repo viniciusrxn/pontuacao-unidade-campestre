@@ -71,42 +71,7 @@ export type Database = {
         }
         Relationships: []
       }
-      polls: {
-        Row: {
-          allow_multiple_votes: boolean
-          created_at: string
-          description: string | null
-          expires_at: string | null
-          id: string
-          options: Json
-          status: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          allow_multiple_votes?: boolean
-          created_at?: string
-          description?: string | null
-          expires_at?: string | null
-          id?: string
-          options?: Json
-          status?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          allow_multiple_votes?: boolean
-          created_at?: string
-          description?: string | null
-          expires_at?: string | null
-          id?: string
-          options?: Json
-          status?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+
       task_submissions: {
         Row: {
           id: string
@@ -314,7 +279,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      authenticate_admin: {
+        Args: {
+          username_param: string
+          password_param: string
+        }
+        Returns: Json
+      }
+      authenticate_unit: {
+        Args: {
+          unit_name_param: string
+          password_param: string
+        }
+        Returns: Json
+      }
+      create_new_unit: {
+        Args: {
+          name_param: string
+          password_param: string
+        }
+        Returns: string
+      }
+      delete_unit: {
+        Args: {
+          unit_id_param: string
+        }
+        Returns: boolean
+      }
+      is_form_enabled_for_unit: {
+        Args: {
+          form_name: string
+          unit_id: string
+        }
+        Returns: boolean
+      }
+      update_unit_password: {
+        Args: {
+          unit_id_param: string
+          new_password_param: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

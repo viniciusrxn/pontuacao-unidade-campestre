@@ -320,57 +320,7 @@ Response:
 ]
 ```
 
-#### POST /rest/v1/polls
-Criar enquete (Admin only)
 
-```typescript
-POST /rest/v1/polls
-
-Body:
-{
-  "title": "Nova Enquete",
-  "description": "Descrição da enquete",
-  "options": [
-    {"id": "1", "text": "Sim"},
-    {"id": "2", "text": "Não"}
-  ],
-  "allow_multiple_votes": false,
-  "expires_at": "2025-01-31T23:59:59Z"
-}
-```
-
-#### DELETE /rest/v1/polls
-Deletar enquete (Admin only)
-
-```typescript
-DELETE /rest/v1/polls?id=eq.{poll_id}
-```
-
-### Poll Votes
-
-#### GET /rest/v1/poll_votes
-Buscar votos (para resultados)
-
-```typescript
-GET /rest/v1/poll_votes?poll_id=eq.{poll_id}&select=option_id
-
-// Para verificar voto da unidade
-GET /rest/v1/poll_votes?poll_id=eq.{poll_id}&unit_id=eq.{unit_id}
-```
-
-#### POST /rest/v1/poll_votes
-Votar em enquete (Unit only)
-
-```typescript
-POST /rest/v1/poll_votes
-
-Body:
-{
-  "poll_id": "uuid",
-  "unit_id": "uuid",
-  "option_id": "1"
-}
-```
 
 ### Form Settings
 

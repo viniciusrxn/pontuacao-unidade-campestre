@@ -17,7 +17,7 @@
 
 ## Visão Geral
 
-O **Ranking Unidade** é uma Progressive Web App (PWA) desenvolvida para gerenciar competições entre unidades de desbravadores. O sistema permite o acompanhamento de pontuações através de tarefas, controle de presença semanal, comunicação via notícias e enquetes, e apresentação de ranking em tempo real.
+O **Ranking Unidade** é uma Progressive Web App (PWA) desenvolvida para gerenciar competições entre unidades de desbravadores. O sistema permite o acompanhamento de pontuações através de tarefas, controle de presença semanal, comunicação via notícias, e apresentação de ranking em tempo real.
 
 ### Características Principais
 - **Mobile-first design** com suporte completo a PWA
@@ -109,10 +109,10 @@ pontuacao-unidade/
 │   ├── components/          # Componentes React
 │   │   ├── ui/             # Componentes base (shadcn/ui)
 │   │   ├── AdminNewsManager.tsx
-│   │   ├── AdminPollManager.tsx
+
 │   │   ├── Layout.tsx      # Layout principal
 │   │   ├── NewsFeed.tsx    # Feed de notícias
-│   │   ├── PollsComponent.tsx
+
 │   │   └── ...
 │   ├── contexts/           # Contextos React
 │   │   └── AppContext.tsx  # Estado global
@@ -237,10 +237,7 @@ const totalScore = baseScore + punctualityBonus + neckerchiefBonus +
 - **Status:** draft/published/archived
 - **Ordenação:** fixados primeiro, depois data
 
-#### Enquetes:
-- **Múltiplas opções** configuráveis
-- **Voto único ou múltiplo**
-- **Data de expiração** opcional
+
 - **Resultados em tempo real**
 - **Prevenção de voto duplicado**
 
@@ -256,7 +253,7 @@ const totalScore = baseScore + punctualityBonus + neckerchiefBonus +
 - **Gestão de logos**
 - **Controle de formulários**
 - **Reset de estatísticas**
-- **Gerenciamento de notícias/enquetes**
+- **Gerenciamento de notícias**
 
 ---
 
@@ -370,31 +367,7 @@ CREATE TABLE public.news_feed (
 );
 ```
 
-#### 6. `polls`
-```sql
-CREATE TABLE public.polls (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  title text NOT NULL,
-  description text,
-  options jsonb NOT NULL,
-  allow_multiple_votes boolean DEFAULT false,
-  status text DEFAULT 'active',
-  expires_at timestamp with time zone,
-  created_at timestamp with time zone DEFAULT now()
-);
-```
 
-#### 7. `poll_votes`
-```sql
-CREATE TABLE public.poll_votes (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  poll_id uuid REFERENCES polls(id) ON DELETE CASCADE,
-  unit_id uuid REFERENCES units(id) ON DELETE CASCADE,
-  option_id text NOT NULL,
-  voted_at timestamp with time zone DEFAULT now(),
-  UNIQUE(poll_id, unit_id, option_id)
-);
-```
 
 ### Stored Procedures
 
@@ -442,7 +415,7 @@ CREATE INDEX idx_tasks_status ON tasks(status);
 CREATE INDEX idx_task_submissions_unit_task ON task_submissions(unit_id, task_id);
 CREATE INDEX idx_weekly_attendances_unit_date ON weekly_attendances(unit_id, date);
 CREATE INDEX idx_news_feed_status_pinned ON news_feed(status, is_pinned, created_at);
-CREATE INDEX idx_polls_status_created ON polls(status, created_at);
+
 ```
 
 ---

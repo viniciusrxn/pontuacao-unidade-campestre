@@ -70,29 +70,7 @@ export interface NewsItem {
   status: 'draft' | 'published' | 'archived';
 }
 
-export interface Poll {
-  id: string;
-  title: string;
-  description?: string;
-  options: PollOption[];
-  createdAt: string;
-  expiresAt?: string;
-  status: 'active' | 'closed' | 'draft';
-  allowMultipleVotes: boolean;
-}
 
-export interface PollOption {
-  id: string;
-  text: string;
-}
-
-export interface PollVote {
-  id: string;
-  pollId: string;
-  unitId: string;
-  optionId: string;
-  votedAt: string;
-}
 
 export interface SystemNotification {
   id: string;
@@ -165,24 +143,7 @@ export interface SupabaseNewsItem {
   status: string;
 }
 
-export interface SupabasePoll {
-  id: string;
-  title: string;
-  description?: string;
-  options: any;
-  created_at: string;
-  expires_at?: string;
-  status: string;
-  allow_multiple_votes: boolean;
-}
 
-export interface SupabasePollVote {
-  id: string;
-  poll_id: string;
-  unit_id: string;
-  option_id: string;
-  voted_at: string;
-}
 
 export interface SupabaseSystemNotification {
   id: string;

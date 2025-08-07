@@ -182,7 +182,7 @@ const WeeklyAttendance = () => {
 
     if (success) {
       toast({
-        title: "Presença semanal enviada!",
+        title: "Cantinho da Unidade enviada!",
         description: "Sua presença foi registrada com sucesso.",
         variant: "default",
       });
@@ -220,7 +220,7 @@ const WeeklyAttendance = () => {
           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 md:p-6 rounded-lg shadow-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold">Registro de Presença</h1>
+                <h1 className="text-2xl md:text-3xl font-bold">Presença da Unidade</h1>
                 <p className="text-base md:text-lg opacity-90">{currentUnit.name}</p>
               </div>
               <Button 
@@ -404,7 +404,7 @@ const WeeklyAttendance = () => {
                             </Select>
                           </FormControl>
                           <FormDescription>
-                            Número de membros com uniforme completo (0-12)
+                            Número de membros com alguma camisa de atividade (Clube,unidade,AP,R2) (0-12)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

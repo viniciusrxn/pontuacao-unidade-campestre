@@ -3,16 +3,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   NewsItem, 
-  Poll, 
-  PollVote, 
-  SupabaseNewsItem,
-  SupabasePoll,
-  SupabasePollVote
+  SupabaseNewsItem
 } from '@/types';
 
 export const useCommunication = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [polls, setPolls] = useState<Poll[]>([]);
+
   const [loading, setLoading] = useState(true);
 
   // Transform functions
@@ -27,16 +23,7 @@ export const useCommunication = () => {
     status: item.status as 'draft' | 'published' | 'archived'
   });
 
-  const transformPoll = (poll: SupabasePoll): Poll => ({
-    id: poll.id,
-    title: poll.title,
-    description: poll.description,
-    options: Array.isArray(poll.options) ? poll.options : [],
-    createdAt: poll.created_at,
-    expiresAt: poll.expires_at,
-    status: poll.status as 'active' | 'closed' | 'draft',
-    allowMultipleVotes: poll.allow_multiple_votes
-  });
+
 
   // Fetch functions
   const fetchNews = async () => {
@@ -55,20 +42,7 @@ export const useCommunication = () => {
     }
   };
 
-  const fetchPolls = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('polls')
-        .select('*')
-        .in('status', ['active', 'closed'])
-        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPolls((data || []).map(transformPoll));
-    } catch (error) {
-      console.error('Error fetching polls:', error);
-    }
-  };
 
   // Admin functions
   const createNewsItem = async (title: string, content: string, isPinned = false) => {
@@ -122,121 +96,15 @@ export const useCommunication = () => {
     }
   };
 
-  const createPoll = async (
-    title: string, 
-    description: string, 
-    options: string[], 
-    expiresAt?: string,
-    allowMultipleVotes = false
-  ) => {
-    try {
-      const pollOptions = options.map((text, index) => ({
-        id: (index + 1).toString(),
-        text
-      }));
 
-      const { data, error } = await supabase
-        .from('polls')
-        .insert({
-          title,
-          description,
-          options: pollOptions,
-          expires_at: expiresAt,
-          allow_multiple_votes: allowMultipleVotes,
-          status: 'active'
-        })
-        .select()
-        .single();
 
-      if (error) throw error;
-      await fetchPolls();
-      return data;
-    } catch (error) {
-      console.error('Error creating poll:', error);
-      throw error;
-    }
-  };
 
-  const deletePoll = async (pollId: string) => {
-    try {
-      // Delete poll votes first (cascade should handle this, but being explicit)
-      await supabase
-        .from('poll_votes')
-        .delete()
-        .eq('poll_id', pollId);
 
-      // Delete the poll
-      const { error } = await supabase
-        .from('polls')
-        .delete()
-        .eq('id', pollId);
 
-      if (error) throw error;
-      await fetchPolls();
-    } catch (error) {
-      console.error('Error deleting poll:', error);
-      throw error;
-    }
-  };
 
-  // Unit functions
-  const votePoll = async (pollId: string, optionId: string, unitId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('poll_votes')
-        .insert({
-          poll_id: pollId,
-          option_id: optionId,
-          unit_id: unitId
-        })
-        .select()
-        .single();
+  
 
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error voting in poll:', error);
-      throw error;
-    }
-  };
 
-  const getPollResults = async (pollId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('poll_votes')
-        .select('option_id')
-        .eq('poll_id', pollId);
-
-      if (error) throw error;
-
-      // Count votes by option
-      const results: Record<string, number> = {};
-      (data || []).forEach(vote => {
-        results[vote.option_id] = (results[vote.option_id] || 0) + 1;
-      });
-
-      return results;
-    } catch (error) {
-      console.error('Error getting poll results:', error);
-      return {};
-    }
-  };
-
-  const getUnitVote = async (pollId: string, unitId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('poll_votes')
-        .select('option_id')
-        .eq('poll_id', pollId)
-        .eq('unit_id', unitId);
-
-      if (error) throw error;
-      return data ? data.map(vote => vote.option_id) : [];
-    } catch (error) {
-      console.error('Error getting unit vote:', error);
-      return [];
-    }
-  };
 
   // New unit management functions
   const updateUnitPassword = async (unitId: string, newPassword: string) => {
@@ -286,10 +154,7 @@ export const useCommunication = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([
-        fetchNews(),
-        fetchPolls()
-      ]);
+      await fetchNews();
       setLoading(false);
     };
 
@@ -298,23 +163,17 @@ export const useCommunication = () => {
 
   return {
     news,
-    polls,
     loading,
     // Admin functions
     createNewsItem,
     deleteNewsItem,
-    createPoll,
-    deletePoll,
-    // Unit functions
-    votePoll,
-    getPollResults,
-    getUnitVote,
+
     // Unit management functions
     updateUnitPassword,
     createNewUnit,
     deleteUnit,
     // Refresh functions
     fetchNews,
-    fetchPolls
+
   };
 };
