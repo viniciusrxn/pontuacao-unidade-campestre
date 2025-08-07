@@ -244,6 +244,33 @@ const UnitDashboard = () => {
           />
         </div>
 
+        {/* Seção para presença semanal */}
+        <div className="mb-6">
+          <Card>
+            <CardHeader className="pb-2 md:pb-3">
+              <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-purple-500" />
+                Cantinho da Unidade
+              </CardTitle>
+              <CardDescription>Registre a presença da sua unidade aos sábados para ganhar pontos</CardDescription>
+            </CardHeader>
+            <CardContent className="pb-3">
+              <div className="flex flex-col md:flex-row gap-2 md:gap-4">
+                <Link to="/weekly-attendance" className="w-full md:w-auto">
+                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700" size={isMobile ? "sm" : "default"}>
+                    Registrar Presença de Hoje
+                  </Button>
+                </Link>
+                <Link to="/weekly-attendance-history" className="w-full md:w-auto">
+                  <Button variant="outline" className="w-full" size={isMobile ? "sm" : "default"}>
+                    Ver Histórico de Presenças
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Task Overview Section */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -278,35 +305,6 @@ const UnitDashboard = () => {
             {showNews && <NewsFeed news={news} />}
           </div>
         )}
-
-
-
-        {/* Seção para presença semanal */}
-        <div className="mb-6">
-          <Card>
-            <CardHeader className="pb-2 md:pb-3">
-              <CardTitle className="text-lg md:text-xl flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 md:w-6 md:h-6 text-purple-500" />
-                Cantinho da Unidade
-              </CardTitle>
-              <CardDescription>Registre a presença da sua unidade aos sábados para ganhar pontos</CardDescription>
-            </CardHeader>
-            <CardContent className="pb-3">
-              <div className="flex flex-col md:flex-row gap-2 md:gap-4">
-                <Link to="/weekly-attendance" className="w-full md:w-auto">
-                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700" size={isMobile ? "sm" : "default"}>
-                    Registrar Presença de Hoje
-                  </Button>
-                </Link>
-                <Link to="/weekly-attendance-history" className="w-full md:w-auto">
-                  <Button variant="outline" className="w-full" size={isMobile ? "sm" : "default"}>
-                    Ver Histórico de Presenças
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         <Tabs defaultValue="available" className="mb-4 md:mb-6" onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-4 w-full">
