@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select } from '@/components/ui/select';
 import { SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Clock, Check, X, Award, Shirt, Flag, User, Trash2, Image, Lock, Unlock, Settings, Book, RotateCcw, Newspaper, BarChart3, Users, Info, Inbox, FileText, CheckSquare, BarChart2 } from 'lucide-react';
+import { Clock, Check, X, Award, Shirt, Flag, User, Trash2, Image, Lock, Unlock, Settings, Book, RotateCcw, Newspaper, BarChart3, Users, Info, Inbox, FileText, CheckSquare, BarChart2, TrendingUp } from 'lucide-react';
 import { TaskSubmission, WeeklyAttendance } from '@/types';
 import UnitDisplay from '@/components/UnitDisplay';
 import UnitManagement from '@/components/UnitManagement';
@@ -457,7 +457,24 @@ const AdminDashboard = () => {
         <div className="mb-4 sm:mb-8">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-primary">Menu Admin</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl sm:text-3xl font-bold text-primary">Menu Admin</h1>
+                {(pendingSubmissions.length > 0 || pendingAttendances.length > 0) && (
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <div className="w-7 h-7 bg-red-500 rounded-full flex items-center justify-center animate-pulse shadow-lg">
+                        <span className="text-white text-sm font-bold">
+                          {pendingSubmissions.length + pendingAttendances.length}
+                        </span>
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-600 rounded-full animate-ping"></div>
+                    </div>
+                    <span className="text-sm text-red-600 font-semibold hidden sm:block">
+                      {pendingSubmissions.length + pendingAttendances.length} pendente{(pendingSubmissions.length + pendingAttendances.length) !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+              </div>
               <p className="text-sm sm:text-base text-gray-600">Gerencie tarefas, comunicação e revise envios</p>
             </div>
             <Button onClick={() => setShowResetConfirm(true)} variant="destructive" size="sm" className="flex items-center gap-2">
@@ -467,21 +484,95 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Pending Items Alert */}
+        {(pendingSubmissions.length > 0 || pendingAttendances.length > 0) && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 border-l-4 border-red-400 rounded-lg shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-red-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-red-800">
+                    Itens Pendentes para Análise
+                  </h3>
+                  <div className="text-sm text-red-700">
+                    {pendingSubmissions.length > 0 && (
+                      <span className="inline-flex items-center mr-4">
+                        <Inbox className="w-4 h-4 mr-1" />
+                        {pendingSubmissions.length} tarefa{pendingSubmissions.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                    {pendingAttendances.length > 0 && (
+                      <span className="inline-flex items-center">
+                        <FileText className="w-4 h-4 mr-1" />
+                        {pendingAttendances.length} formulário{pendingAttendances.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                {pendingSubmissions.length > 0 && (
+                  <Button
+                    onClick={() => setActiveTab("submissions")}
+                    variant="outline"
+                    size="sm"
+                    className="border-red-300 text-red-700 hover:bg-red-50"
+                  >
+                    Ver Tarefas
+                  </Button>
+                )}
+                {pendingAttendances.length > 0 && (
+                  <Button
+                    onClick={() => setActiveTab("attendances")}
+                    variant="outline"
+                    size="sm"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                  >
+                    Ver Formulários
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <Tabs value={activeTab} className="mb-6" onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-4 p-4 bg-white rounded-xl shadow-sm">
-            <TabsTrigger value="submissions" onClick={() => scrollToSection("submissions")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
-              <Inbox className="w-6 h-6" />
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-11 gap-4 p-4 bg-white rounded-xl shadow-sm">
+            <TabsTrigger value="submissions" onClick={() => scrollToSection("submissions")} className="relative flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
+              <div className="relative">
+                <Inbox className="w-6 h-6" />
+                {pendingSubmissions.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce">
+                    {pendingSubmissions.length}
+                  </span>
+                )}
+              </div>
               <span className="text-xs font-medium text-center">Envios</span>
-              {pendingSubmissions.length > 0 && <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs py-0.5 px-1.5 rounded-full">
-                  {pendingSubmissions.length}
-                </span>}
+              {pendingSubmissions.length > 0 && (
+                <span className="text-xs text-red-600 font-semibold">
+                  {pendingSubmissions.length} pendente{pendingSubmissions.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </TabsTrigger>
-            <TabsTrigger value="attendances" onClick={() => scrollToSection("attendances")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
-              <FileText className="w-6 h-6" />
+            <TabsTrigger value="attendances" onClick={() => scrollToSection("attendances")} className="relative flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
+              <div className="relative">
+                <FileText className="w-6 h-6" />
+                {pendingAttendances.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold min-w-[20px] h-5 flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-bounce">
+                    {pendingAttendances.length}
+                  </span>
+                )}
+              </div>
               <span className="text-xs font-medium text-center">Forms</span>
-              {pendingAttendances.length > 0 && <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs py-0.5 px-1.5 rounded-full">
-                  {pendingAttendances.length}
-                </span>}
+              {pendingAttendances.length > 0 && (
+                <span className="text-xs text-orange-600 font-semibold">
+                  {pendingAttendances.length} pendente{pendingAttendances.length !== 1 ? 's' : ''}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="news" onClick={() => scrollToSection("news")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
               <Newspaper className="w-6 h-6" />
@@ -511,6 +602,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="form-control" onClick={() => scrollToSection("form-control")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
               <Settings className="w-6 h-6" />
               <span className="text-xs font-medium text-center">Controle</span>
+            </TabsTrigger>
+            <TabsTrigger value="statistics" onClick={() => scrollToSection("statistics")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
+              <TrendingUp className="w-6 h-6" />
+              <span className="text-xs font-medium text-center">Estatísticas</span>
             </TabsTrigger>
           </TabsList>
           
@@ -1090,6 +1185,158 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
           
+          {/* Statistics Tab */}
+          <TabsContent value="statistics" id="statistics" className="mt-6">
+            <div className="space-y-6">
+              {/* Overview Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Total Task Submissions */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Tarefas Enviadas</CardTitle>
+                    <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{submissions.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {submissions.filter(s => s.status === 'completed').length} aprovadas, {' '}
+                      {submissions.filter(s => s.status === 'pending').length} pendentes
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Average Weekly Attendance */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Presença Média</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {attendances.length > 0 
+                        ? Math.round(attendances.reduce((sum, att) => sum + att.presentMembers.length, 0) / attendances.length)
+                        : 0
+                      }
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      membros por semana
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Total Active Tasks */}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Tarefas Ativas</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {tasks.filter(t => t.status === 'active').length}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      de {tasks.length} total
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Most Active Units */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Unidades Mais Ativas
+                  </CardTitle>
+                  <CardDescription>
+                    Ranking baseado em tarefas enviadas e presenças
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {units
+                      .map(unit => {
+                        const unitSubmissions = submissions.filter(s => s.unitId === unit.id);
+                        const unitAttendances = attendances.filter(a => a.unitId === unit.id);
+                        const activityScore = unitSubmissions.length + (unitAttendances.length * 2);
+                        return { ...unit, activityScore, submissions: unitSubmissions.length, attendances: unitAttendances.length };
+                      })
+                      .sort((a, b) => b.activityScore - a.activityScore)
+                      .slice(0, 5)
+                      .map((unit, index) => (
+                        <div key={unit.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                              index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                              index === 1 ? 'bg-gray-100 text-gray-800' :
+                              index === 2 ? 'bg-orange-100 text-orange-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-medium">{unit.name}</p>
+                              <p className="text-xs text-gray-600">
+                                {unit.submissions} tarefas • {unit.attendances} presenças
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-lg">{unit.score}</p>
+                            <p className="text-xs text-gray-600">pontos</p>
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Weekly Attendance Statistics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5" />
+                    Estatísticas de Presença Semanal
+                  </CardTitle>
+                  <CardDescription>
+                    Análise detalhada das presenças por unidade
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {units.map(unit => {
+                      const unitAttendances = attendances.filter(a => a.unitId === unit.id && a.status === 'validated');
+                      const avgPresence = unitAttendances.length > 0 
+                        ? Math.round(unitAttendances.reduce((sum, att) => sum + att.presentMembers.length, 0) / unitAttendances.length)
+                        : 0;
+                      const totalWeeks = unitAttendances.length;
+                      
+                      return (
+                        <div key={unit.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <p className="font-medium">{unit.name}</p>
+                            <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                              <span>📅 {totalWeeks} semanas</span>
+                              <span>👥 {avgPresence} média</span>
+                              <span>⭐ {unit.score} pontos</span>
+                            </div>
+                          </div>
+                          <div className="w-32 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${Math.min(100, (avgPresence / 15) * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* News Management Tab */}
           <TabsContent value="news" id="news" className="mt-6">
             <AdminNewsManager news={news} />
