@@ -18,6 +18,10 @@ import UnitProgress from '@/components/UnitProgress';
 import NewsFeed from '@/components/NewsFeed';
 
 import UnitInfoManager from '@/components/UnitInfoManager';
+import TaskOrganizer from '@/components/TaskOrganizer';
+import TaskStats from '@/components/TaskStats';
+import TaskSearch from '@/components/TaskSearch';
+import TaskOverview from '@/components/TaskOverview';
 
 const UnitDashboard = () => {
   const { currentUser, units, tasks, submissions, submitTask, getTasksForUnit } = useAppContext();
@@ -29,6 +33,9 @@ const UnitDashboard = () => {
   const [submissionProof, setSubmissionProof] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showNews, setShowNews] = useState(true);
+  const [filteredAvailableTasks, setFilteredAvailableTasks] = useState<Task[]>([]);
+  const [filteredPendingTasks, setFilteredPendingTasks] = useState<Task[]>([]);
+  const [filteredCompletedTasks, setFilteredCompletedTasks] = useState<Task[]>([]);
 
 
   // Redireciona se não estiver logado como unidade
@@ -237,6 +244,19 @@ const UnitDashboard = () => {
           />
         </div>
 
+        {/* Task Overview Section */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            Visão Geral das Tarefas
+          </h2>
+          <TaskOverview
+            availableTasks={availableTasks}
+            pendingTasks={pendingTasks}
+            completedTasks={completedTasks}
+          />
+        </div>
+
         {/* Seção de Notícias - com opção de esconder */}
         {news.length > 0 && (
           <div className="mb-6">
@@ -326,8 +346,16 @@ const UnitDashboard = () => {
                 <p className="text-gray-600 text-sm md:text-base">Sem tarefas disponíveis no momento.</p>
               </div>
             ) : (
-              <div>
-                {availableTasks.map(task => renderTaskCard(task))}
+              <div className="space-y-4">
+                <TaskSearch
+                  tasks={availableTasks}
+                  onFilterChange={setFilteredAvailableTasks}
+                />
+                <TaskOrganizer
+                  tasks={filteredAvailableTasks.length > 0 ? filteredAvailableTasks : availableTasks}
+                  renderTaskCard={renderTaskCard}
+                  className="mt-4"
+                />
               </div>
             )}
           </TabsContent>
@@ -338,8 +366,16 @@ const UnitDashboard = () => {
                 <p className="text-gray-600 text-sm md:text-base">Não há tarefas pendentes.</p>
               </div>
             ) : (
-              <div>
-                {pendingTasks.map(task => renderTaskCard(task))}
+              <div className="space-y-4">
+                <TaskSearch
+                  tasks={pendingTasks}
+                  onFilterChange={setFilteredPendingTasks}
+                />
+                <TaskOrganizer
+                  tasks={filteredPendingTasks.length > 0 ? filteredPendingTasks : pendingTasks}
+                  renderTaskCard={renderTaskCard}
+                  className="mt-4"
+                />
               </div>
             )}
           </TabsContent>
@@ -350,14 +386,34 @@ const UnitDashboard = () => {
                 <p className="text-gray-600 text-sm md:text-base">Você ainda não completou nenhuma tarefa.</p>
               </div>
             ) : (
-              <div>
-                {completedTasks.map(task => renderTaskCard(task))}
+              <div className="space-y-4">
+                <TaskSearch
+                  tasks={completedTasks}
+                  onFilterChange={setFilteredCompletedTasks}
+                />
+                <TaskOrganizer
+                  tasks={filteredCompletedTasks.length > 0 ? filteredCompletedTasks : completedTasks}
+                  renderTaskCard={renderTaskCard}
+                  className="mt-4"
+                />
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="info" className="mt-3 md:mt-4">
-            <UnitInfoManager unitId={currentUnit.id} />
+            <div className="space-y-6">
+              <UnitInfoManager unitId={currentUnit.id} />
+              
+              {/* Estatísticas das Tarefas */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Estatísticas das Tarefas</h3>
+                <TaskStats
+                  tasks={unitAvailableTasks}
+                  completedTasks={completedTasks}
+                  pendingTasks={pendingTasks}
+                />
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
