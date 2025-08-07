@@ -62,6 +62,10 @@ const AdminDashboard = () => {
     category: 'geral'
   });
 
+  // Task targeting states
+  const [taskTargetMode, setTaskTargetMode] = useState<'all' | 'selected'>('all');
+  const [selectedTaskUnits, setSelectedTaskUnits] = useState<Record<string, boolean>>({});
+
   // Unit score edit state
   const [editingScores, setEditingScores] = useState<Record<string, number>>({});
 
@@ -214,8 +218,13 @@ const AdminDashboard = () => {
       [unitId]: !prev[unitId]
     }));
   };
-  const handleCreateTask = (e: React.FormEvent) => {
+  const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('handleCreateTask called');
+    console.log('newTask:', newTask);
+    console.log('taskTargetMode:', taskTargetMode);
+    console.log('selectedTaskUnits:', selectedTaskUnits);
+    
     if (!newTask.title || !newTask.description || newTask.points <= 0) {
       toast({
         title: "Falta Informação",
@@ -224,30 +233,56 @@ const AdminDashboard = () => {
       });
       return;
     }
+    // Get selected unit IDs if targeting specific units
+    const targetUnits = taskTargetMode === 'selected' 
+      ? Object.entries(selectedTaskUnits)
+          .filter(([_, selected]) => selected)
+          .map(([unitId, _]) => unitId)
+      : undefined;
+
     const taskData = {
       title: newTask.title,
       description: newTask.description,
       points: newTask.points,
       deadline: new Date(newTask.deadline).toISOString(),
       difficulty: newTask.difficulty,
-      category: newTask.category
+      category: newTask.category,
+      targetUnits
     };
-    createTask(taskData);
-
-    // Reset form
-    setNewTask({
-      title: '',
-      description: '',
-      points: 50,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-      difficulty: 'easy',
-      category: 'geral'
-    });
-    toast({
-      title: "Tarefa criada!",
-      description: "A nova tarefa foi criada com sucesso.",
-      variant: "default"
-    });
+    
+    console.log('About to call createTask with:', taskData);
+    
+    try {
+      await createTask(taskData);
+      
+      // Reset form only if successful
+      setNewTask({
+        title: '',
+        description: '',
+        points: 50,
+        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        difficulty: 'easy',
+        category: 'geral'
+      });
+      setTaskTargetMode('all');
+      setSelectedTaskUnits({});
+      
+      const isTargeted = taskTargetMode === 'selected' && targetUnits && targetUnits.length > 0;
+      toast({
+        title: "Tarefa criada!",
+        description: isTargeted 
+          ? `Tarefa direcionada criada para ${targetUnits.length} unidade${targetUnits.length !== 1 ? 's' : ''}.`
+          : "Tarefa global criada com sucesso.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error in handleCreateTask:', error);
+      toast({
+        title: "Erro ao criar tarefa",
+        description: "Não foi possível criar a tarefa. Verifique o console para mais detalhes.",
+        variant: "destructive"
+      });
+    }
   };
   const handleValidateSubmission = (submission: TaskSubmission, approved: boolean) => {
     validateTask(submission.id, approved);
@@ -722,8 +757,84 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-primary">
-                    Criar Tarefa
+                  {/* Task Targeting Section */}
+                  <div className="border-t pt-4">
+                    <Label className="text-sm font-medium mb-3 block">Direcionamento da Tarefa</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="target-all"
+                          name="taskTarget"
+                          checked={taskTargetMode === 'all'}
+                          onChange={() => setTaskTargetMode('all')}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="target-all" className="text-sm">
+                          Todas as unidades (tarefa global)
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="target-selected"
+                          name="taskTarget"
+                          checked={taskTargetMode === 'selected'}
+                          onChange={() => setTaskTargetMode('selected')}
+                          className="w-4 h-4"
+                        />
+                        <Label htmlFor="target-selected" className="text-sm">
+                          Unidades específicas
+                        </Label>
+                      </div>
+                      
+                      {taskTargetMode === 'selected' && (
+                        <div className="ml-6 mt-3 p-3 bg-gray-50 rounded-lg">
+                          <Label className="text-sm font-medium mb-2 block">
+                            Selecione as unidades:
+                          </Label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                            {units.map(unit => (
+                              <div key={unit.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`unit-${unit.id}`}
+                                  checked={selectedTaskUnits[unit.id] || false}
+                                  onCheckedChange={(checked) => 
+                                    setSelectedTaskUnits(prev => ({
+                                      ...prev,
+                                      [unit.id]: checked as boolean
+                                    }))
+                                  }
+                                />
+                                <Label 
+                                  htmlFor={`unit-${unit.id}`} 
+                                  className="text-sm cursor-pointer flex-1"
+                                >
+                                  {unit.name}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                          {taskTargetMode === 'selected' && Object.values(selectedTaskUnits).filter(Boolean).length === 0 && (
+                            <p className="text-xs text-orange-600 mt-2">
+                              ⚠️ Selecione pelo menos uma unidade
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-primary"
+                    disabled={taskTargetMode === 'selected' && Object.values(selectedTaskUnits).filter(Boolean).length === 0}
+                  >
+                    {taskTargetMode === 'all' 
+                      ? 'Criar Tarefa (Todas as Unidades)' 
+                      : `Criar Tarefa (${Object.values(selectedTaskUnits).filter(Boolean).length} unidade${Object.values(selectedTaskUnits).filter(Boolean).length !== 1 ? 's' : ''})`
+                    }
                   </Button>
                 </form>
               </CardContent>
@@ -742,6 +853,19 @@ const AdminDashboard = () => {
                             <h4 className="font-medium text-sm sm:text-base">{task.title}</h4>
                             <DifficultyBadge difficulty={task.difficulty || 'easy'} />
                             {task.category && <TaskCategoryBadge category={task.category} />}
+                            {task.targetUnits && task.targetUnits.length > 0 && (
+                              <span 
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 cursor-help"
+                                title={`Direcionada para: ${task.targetUnits.map(unitId => units.find(u => u.id === unitId)?.name || 'Unidade não encontrada').join(', ')}`}
+                              >
+                                🎯 {task.targetUnits.length} unidade{task.targetUnits.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {(!task.targetUnits || task.targetUnits.length === 0) && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                🌐 Todas
+                              </span>
+                            )}
                           </div>
                           <p className="text-xs sm:text-sm text-gray-600 mb-2">{task.description}</p>
                           <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-gray-500">

@@ -124,6 +124,7 @@ export type Database = {
           id: string
           points: number
           status: string
+          target_units: string[] | null
           title: string
           updated_at: string
         }
@@ -136,6 +137,7 @@ export type Database = {
           id?: string
           points: number
           status?: string
+          target_units?: string[] | null
           title: string
           updated_at?: string
         }
@@ -148,6 +150,7 @@ export type Database = {
           id?: string
           points?: number
           status?: string
+          target_units?: string[] | null
           title?: string
           updated_at?: string
         }

@@ -23,6 +23,7 @@ export interface Task {
   createdAt: string;
   difficulty?: 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary';
   category?: string;
+  targetUnits?: string[]; // Array de IDs das unidades alvo. null/undefined = todas as unidades
 }
 
 export interface TaskSubmission {
@@ -105,6 +106,7 @@ export interface SupabaseTask {
   created_at: string;
   difficulty?: string;
   category?: string;
+  target_units?: string[];
 }
 
 export interface SupabaseTaskSubmission {

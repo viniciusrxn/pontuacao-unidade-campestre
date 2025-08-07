@@ -20,7 +20,7 @@ import NewsFeed from '@/components/NewsFeed';
 import UnitInfoManager from '@/components/UnitInfoManager';
 
 const UnitDashboard = () => {
-  const { currentUser, units, tasks, submissions, submitTask } = useAppContext();
+  const { currentUser, units, tasks, submissions, submitTask, getTasksForUnit } = useAppContext();
   const { news } = useCommunication();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -56,14 +56,17 @@ const UnitDashboard = () => {
     .filter(s => s.status === 'pending')
     .map(s => s.taskId));
   
-  const availableTasks = tasks.filter(task => 
+  // Filtra apenas as tarefas disponíveis para esta unidade específica
+  const unitAvailableTasks = getTasksForUnit(currentUnit.id);
+  
+  const availableTasks = unitAvailableTasks.filter(task => 
     task.status === 'active' && 
     !completedTaskIds.has(task.id) &&
     !pendingTaskIds.has(task.id)
   );
   
-  const pendingTasks = tasks.filter(task => pendingTaskIds.has(task.id));
-  const completedTasks = tasks.filter(task => completedTaskIds.has(task.id));
+  const pendingTasks = unitAvailableTasks.filter(task => pendingTaskIds.has(task.id));
+  const completedTasks = unitAvailableTasks.filter(task => completedTaskIds.has(task.id));
 
   const handleTaskSubmission = () => {
     if (!selectedTaskId || !submissionProof.trim()) {

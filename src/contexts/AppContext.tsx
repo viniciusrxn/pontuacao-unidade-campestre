@@ -56,6 +56,8 @@ interface AppContextType {
   toggleAttendanceFormAvailability: (enabled: boolean, enabledUnits?: string[]) => Promise<boolean>;
   resetAllStatistics: () => Promise<boolean>;
   fetchUnits: () => Promise<void>;
+  isTaskAvailableForUnit: (task: Task, unitId: string) => boolean;
+  getTasksForUnit: (unitId: string) => Task[];
   isFormEnabledForUnit: (unitId: string) => boolean;
 }
 
@@ -93,17 +95,38 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       tasks: [] // Will be populated based on submissions
     });
 
-    const transformTask = (task: SupabaseTask): Task => ({
-      id: task.id,
-      title: task.title,
-      description: task.description || '',
-      points: task.points,
-      deadline: task.deadline,
-      status: task.status as 'active' | 'expired',
-      createdAt: task.created_at,
-      difficulty: (task.difficulty as 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary') || 'easy',
-      category: task.category || 'geral'
-    });
+    // Helper function to get task targeting from localStorage
+    const getTaskTargeting = (taskId: string): string[] | null => {
+      try {
+        const taskTargeting = JSON.parse(localStorage.getItem('taskTargeting') || '{}');
+        return taskTargeting[taskId] || null;
+      } catch (error) {
+        console.error('Error getting task targeting:', error);
+        return null;
+      }
+    };
+
+    const transformTask = (task: SupabaseTask): Task => {
+      // Get targeting from database or localStorage fallback
+      let targetUnits = task.target_units;
+      if (!targetUnits) {
+        const storedTargeting = getTaskTargeting(task.id);
+        targetUnits = storedTargeting;
+      }
+
+      return {
+        id: task.id,
+        title: task.title,
+        description: task.description || '',
+        points: task.points,
+        deadline: task.deadline,
+        status: task.status as 'active' | 'expired',
+        createdAt: task.created_at,
+        difficulty: (task.difficulty as 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary') || 'easy',
+        category: task.category || 'geral',
+        targetUnits: targetUnits
+      };
+    };
 
     const transformSubmission = (submission: SupabaseTaskSubmission): TaskSubmission => ({
       id: submission.id,
@@ -336,29 +359,56 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       deadline: string;
       difficulty?: string;
       category?: string;
+      targetUnits?: string[];
     }): Promise<void> => {
       try {
+        console.log('Creating task with data:', taskData);
         const client = supabase;
-        const { data, error } = await client
+        // Try to insert with target_units field, fallback if column doesn't exist
+        let taskToInsert = {
+          title: taskData.title,
+          description: taskData.description,
+          points: taskData.points,
+          deadline: taskData.deadline,
+          difficulty: taskData.difficulty || 'easy',
+          category: taskData.category || 'geral',
+          status: 'active'
+        };
+
+        // First attempt: try with target_units field
+        let { data, error } = await client
           .from('tasks')
-          .insert([
-            {
-              title: taskData.title,
-              description: taskData.description,
-              points: taskData.points,
-              deadline: taskData.deadline,
-              difficulty: taskData.difficulty || 'easy',
-              category: taskData.category || 'geral',
-              status: 'active'
-            }
-          ])
+          .insert([{
+            ...taskToInsert,
+            target_units: taskData.targetUnits || null
+          }])
           .select();
+
+        // If error suggests column doesn't exist, retry without target_units
+        if (error && (error.message.includes('target_units') || error.code === '42703')) {
+          console.log('target_units column not found, retrying without it...');
+          const result = await client
+            .from('tasks')
+            .insert([taskToInsert])
+            .select();
+          
+          data = result.data;
+          error = result.error;
+        }
 
         if (error) {
           console.error('Error creating task:', error);
           throw error;
         }
 
+        console.log('Task created successfully:', data);
+        
+        // If target_units field doesn't exist and we have targetUnits, store them separately
+        if (taskData.targetUnits && data && data[0]) {
+          const taskId = data[0].id;
+          await storeTaskTargeting(taskId, taskData.targetUnits);
+        }
+        
         // Refresh tasks to show the new task
         await fetchTasks();
       } catch (error) {
@@ -566,6 +616,34 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }
     };
 
+    // Utility function to check if a task is available for a specific unit
+    const isTaskAvailableForUnit = (task: Task, unitId: string): boolean => {
+      // If targetUnits is null/undefined or empty, task is available for all units (global task)
+      if (!task.targetUnits || task.targetUnits.length === 0) {
+        return true;
+      }
+      // Check if unitId is in the targetUnits array (targeted task)
+      return task.targetUnits.includes(unitId);
+    };
+
+    // Function to get tasks available for a specific unit
+    const getTasksForUnit = (unitId: string): Task[] => {
+      return tasks.filter(task => isTaskAvailableForUnit(task, unitId));
+    };
+
+    // Alternative storage for task targeting when migration is not applied
+    const storeTaskTargeting = async (taskId: string, targetUnits: string[]) => {
+      try {
+        // Store in localStorage as fallback
+        const taskTargeting = JSON.parse(localStorage.getItem('taskTargeting') || '{}');
+        taskTargeting[taskId] = targetUnits;
+        localStorage.setItem('taskTargeting', JSON.stringify(taskTargeting));
+        console.log('Task targeting stored in localStorage:', { taskId, targetUnits });
+      } catch (error) {
+        console.error('Error storing task targeting:', error);
+      }
+    };
+
     const resetAllStatistics = async (): Promise<boolean> => {
       try {
         // Delete all task submissions
@@ -577,9 +655,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         // Delete all tasks
         await supabase.from('tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         
-        // Reset all unit scores to 0
+                // Reset all unit scores to 0
         await supabase.from('units').update({ score: 0 }).neq('id', '00000000-0000-0000-0000-000000000000');
-
+        
+        // Clear task targeting from localStorage
+        localStorage.removeItem('taskTargeting');
+        
         // Refresh all data
         await Promise.all([
           fetchUnits(),
@@ -693,6 +774,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       toggleAttendanceFormAvailability,
       resetAllStatistics,
       fetchUnits,
+      isTaskAvailableForUnit,
+      getTasksForUnit,
       isFormEnabledForUnit
     };
 
