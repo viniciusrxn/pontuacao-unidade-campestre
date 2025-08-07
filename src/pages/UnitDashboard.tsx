@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppContext } from '../contexts/AppContext';
 import { useCommunication } from '../hooks/useCommunication';
 import { useToast } from '@/components/ui/use-toast';
-import { Award, Check, Clock, CalendarDays, X, ChevronDown, ChevronUp, Newspaper, BarChart3, Info } from 'lucide-react';
+import { Award, Check, Clock, CalendarDays, X, ChevronDown, ChevronUp, Newspaper, BarChart3, Info, ListTodo, Eye, CheckCircle2, TrendingUp } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Task } from '../types';
 import UnitDisplay from '@/components/UnitDisplay';
@@ -307,34 +307,56 @@ const UnitDashboard = () => {
         )}
 
         <Tabs defaultValue="available" className="mb-4 md:mb-6" onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="available" className="text-xs md:text-sm">
-              Disponíveis
+          <TabsList className="grid grid-cols-5 w-full h-auto p-1 gap-1">
+            <TabsTrigger 
+              value="available" 
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              <ListTodo className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium">Disponíveis</span>
               {availableTasks.length > 0 && (
-                <span className="ml-1 bg-primary text-white text-xs py-0.5 px-1.5 rounded-full">
+                <span className="bg-primary text-white text-xs py-0.5 px-1.5 rounded-full font-bold">
                   {availableTasks.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pending" className="text-xs md:text-sm">
-              Em Revisão
+            <TabsTrigger 
+              value="pending" 
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
+            >
+              <Eye className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium">Em Revisão</span>
               {pendingTasks.length > 0 && (
-                <span className="ml-1 bg-yellow-500 text-white text-xs py-0.5 px-1.5 rounded-full">
+                <span className="bg-yellow-500 text-white text-xs py-0.5 px-1.5 rounded-full font-bold">
                   {pendingTasks.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="completed" className="text-xs md:text-sm">
-              Concluídas
+            <TabsTrigger 
+              value="completed" 
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-green-600 data-[state=active]:text-white"
+            >
+              <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium">Concluídas</span>
               {completedTasks.length > 0 && (
-                <span className="ml-1 bg-success text-white text-xs py-0.5 px-1.5 rounded-full">
+                <span className="bg-green-600 text-white text-xs py-0.5 px-1.5 rounded-full font-bold">
                   {completedTasks.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="info" className="text-xs md:text-sm">
-              <Info className="w-3 h-3 md:w-4 md:h-4 mr-1" />
-              Informações
+            <TabsTrigger 
+              value="stats" 
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+            >
+              <TrendingUp className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium">Estatísticas</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="info" 
+              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              <Info className="w-4 h-4 md:w-5 md:h-5" />
+              <span className="font-medium">Informações</span>
             </TabsTrigger>
           </TabsList>
           
@@ -398,19 +420,25 @@ const UnitDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="info" className="mt-3 md:mt-4">
+          <TabsContent value="stats" className="mt-3 md:mt-4">
             <div className="space-y-6">
-              <UnitInfoManager unitId={currentUnit.id} />
-              
-              {/* Estatísticas das Tarefas */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Estatísticas das Tarefas</h3>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Estatísticas das Tarefas
+                </h3>
                 <TaskStats
                   tasks={unitAvailableTasks}
                   completedTasks={completedTasks}
                   pendingTasks={pendingTasks}
                 />
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="info" className="mt-3 md:mt-4">
+            <div className="space-y-6">
+              <UnitInfoManager unitId={currentUnit.id} />
             </div>
           </TabsContent>
         </Tabs>
