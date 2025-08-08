@@ -1,6 +1,6 @@
 {
-  "name": "Sistema de Pontuação Unidade 85",
-  "short_name": "Unidade 85",
+  "name": "Pontuação Campestre",
+  "short_name": "Pontuação",
   "description": "Sistema completo de pontuação, tarefas e gerenciamento para a Unidade 85",
   "start_url": "/",
   "display": "standalone",
