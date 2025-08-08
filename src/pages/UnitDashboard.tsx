@@ -271,18 +271,7 @@ const UnitDashboard = () => {
           </Card>
         </div>
 
-        {/* Task Overview Section */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Award className="w-5 h-5" />
-            Visão Geral das Tarefas
-          </h2>
-          <TaskOverview
-            availableTasks={availableTasks}
-            pendingTasks={pendingTasks}
-            completedTasks={completedTasks}
-          />
-        </div>
+        {/* Task Overview Section - movido para baixo dos botões */}
 
         {/* Seção de Notícias - com opção de esconder */}
         {news.length > 0 && (
@@ -307,58 +296,60 @@ const UnitDashboard = () => {
         )}
 
         <Tabs defaultValue="available" className="mb-4 md:mb-6" onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full h-auto p-1 gap-1">
+          <TabsList className="grid grid-cols-5 w-full gap-2 p-1 bg-white rounded-xl shadow-sm">
             <TabsTrigger 
               value="available" 
-              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
-              <ListTodo className="w-4 h-4 md:w-5 md:h-5" />
+              <ListTodo className="w-5 h-5" />
               <span className="font-medium">Disponíveis</span>
               {availableTasks.length > 0 && (
-                <span className="bg-primary text-white text-xs py-0.5 px-1.5 rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold">
                   {availableTasks.length}
                 </span>
               )}
             </TabsTrigger>
             <TabsTrigger 
               value="pending" 
-              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
+              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
-              <Eye className="w-4 h-4 md:w-5 md:h-5" />
+              <Eye className="w-5 h-5" />
               <span className="font-medium">Em Revisão</span>
               {pendingTasks.length > 0 && (
-                <span className="bg-yellow-500 text-white text-xs py-0.5 px-1.5 rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold">
                   {pendingTasks.length}
                 </span>
               )}
             </TabsTrigger>
             <TabsTrigger 
               value="completed" 
-              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-green-600 data-[state=active]:text-white"
+              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
-              <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />
+              <CheckCircle2 className="w-5 h-5" />
               <span className="font-medium">Concluídas</span>
               {completedTasks.length > 0 && (
-                <span className="bg-green-600 text-white text-xs py-0.5 px-1.5 rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold">
                   {completedTasks.length}
                 </span>
               )}
             </TabsTrigger>
             <TabsTrigger 
               value="stats" 
-              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-purple-600 data-[state=active]:text-white"
+              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
-              <TrendingUp className="w-4 h-4 md:w-5 md:h-5" />
+              <TrendingUp className="w-5 h-5" />
               <span className="font-medium">Estatísticas</span>
             </TabsTrigger>
             <TabsTrigger 
               value="info" 
-              className="flex flex-col items-center gap-1 py-3 px-2 text-xs md:text-sm h-auto min-h-[60px] md:min-h-[50px] data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
-              <Info className="w-4 h-4 md:w-5 md:h-5" />
+              <Info className="w-5 h-5" />
               <span className="font-medium">Informações</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Visão Geral movida para aba Estatísticas */}
           
           <TabsContent value="available" className="mt-3 md:mt-4">
             {availableTasks.length === 0 ? (
@@ -422,6 +413,17 @@ const UnitDashboard = () => {
 
           <TabsContent value="stats" className="mt-3 md:mt-4">
             <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Award className="w-5 h-5" />
+                  Visão Geral das Tarefas
+                </h3>
+                <TaskOverview
+                  availableTasks={availableTasks}
+                  pendingTasks={pendingTasks}
+                  completedTasks={completedTasks}
+                />
+              </div>
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5" />
