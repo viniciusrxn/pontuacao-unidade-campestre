@@ -16,30 +16,8 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'robots.txt'],
-      manifest: {
-        name: 'Ranking Unidade',
-        short_name: 'Ranking Unidade',
-        description: 'Acompanhe sua unidade, tarefas e pontuações no ranking',
-        theme_color: '#f8100e',
-        background_color: '#ffffff',
-        display: 'standalone',
-        orientation: 'portrait-primary',
-        scope: '/',
-        start_url: '/',
-        icons: [
-          {
-            src: 'https://i.imgur.com/KYU3KX5.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'https://i.imgur.com/KYU3KX5.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      },
+      includeAssets: ['favicon.ico', 'icons/*.png', 'robots.txt'],
+      manifest: false, // Use external manifest.json
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         runtimeCaching: [
@@ -47,25 +25,39 @@ export default defineConfig(({ mode }) => ({
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-cache',
+              cacheName: 'supabase-api-cache',
               expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 // 24 hours
+                maxEntries: 50,
+                maxAgeSeconds: 7200 // 2 hours
               }
             }
           },
           {
-            urlPattern: /^https:\/\/i\.imgur\.com\/KYU3KX5\.png$/,
+            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'pwa-icons-cache',
+              cacheName: 'google-fonts-cache',
               expiration: {
-                maxEntries: 5,
-                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                maxEntries: 10,
+                maxAgeSeconds: 31536000 // 1 year
+              }
+            }
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 2592000 // 30 days
               }
             }
           }
         ]
+      },
+      devOptions: {
+        enabled: true
       }
     })
   ].filter(Boolean),

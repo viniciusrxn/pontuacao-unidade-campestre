@@ -16,6 +16,7 @@ import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/InstallPrompt";
 import SystemHealthCheck from "./components/SystemHealthCheck";
 import NewsTestComponent from "./components/NewsTestComponent";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => {
           <Sonner />
           <InstallPrompt />
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />

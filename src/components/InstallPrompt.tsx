@@ -1,11 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, Download, Share } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { X, Download, Share, Smartphone, Monitor, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 
 const InstallPrompt: React.FC = () => {
   const { showInstallPrompt, canInstall, isIOS, handleInstallClick, hideInstallPrompt } = useInstallPrompt();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isPWAInstalled, setIsPWAInstalled] = useState(false);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Check if PWA is already installed
+    const checkPWAInstalled = () => {
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        setIsPWAInstalled(true);
+      }
+    };
+    
+    checkPWAInstalled();
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   if (!showInstallPrompt) return null;
 
@@ -15,16 +40,33 @@ const InstallPrompt: React.FC = () => {
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center relative">
                 <img
-                  src="https://i.imgur.com/KYU3KX5.png"
-                  alt="Ranking Unidade"
+                  src="/icons/icon-192x192.png"
+                  alt="Sistema Unidade 85"
                   className="w-8 h-8"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://i.imgur.com/KYU3KX5.png";
+                  }}
                 />
+                {isPWAInstalled && (
+                  <Badge className="absolute -top-2 -right-2 text-xs bg-green-500">
+                    ✓
+                  </Badge>
+                )}
               </div>
               <div>
-                <h3 className="font-bold text-lg">Instalar App</h3>
-                <p className="text-sm text-muted-foreground">Ranking Unidade</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-lg">Sistema PWA</h3>
+                  {isOnline ? (
+                    <Wifi className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <WifiOff className="w-4 h-4 text-red-500" />
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {isPWAInstalled ? "App já instalado" : "Unidade 85"}
+                </p>
               </div>
             </div>
             <Button
@@ -38,24 +80,47 @@ const InstallPrompt: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Instale o app para uma melhor experiência com:
-            </p>
-            
-            <ul className="text-sm space-y-2">
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-primary rounded-full" />
-                Acesso mais rápido
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-primary rounded-full" />
-                Funciona offline
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-primary rounded-full" />
-                Notificações push
-              </li>
-            </ul>
+            {!isPWAInstalled && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Instale o app para uma melhor experiência com:
+                </p>
+                
+                <ul className="text-sm space-y-2">
+                  <li className="flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-primary" />
+                    Acesso mais rápido
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <WifiOff className="w-4 h-4 text-primary" />
+                    Funciona offline
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 text-primary" />
+                    Atualizações automáticas
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-primary" />
+                    Interface nativa
+                  </li>
+                </ul>
+              </>
+            )}
+
+            {/* Status do PWA */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={isOnline ? "default" : "destructive"} className="text-xs">
+                {isOnline ? "✓ Online" : "⚠ Offline"}
+              </Badge>
+              {isPWAInstalled && (
+                <Badge variant="default" className="text-xs bg-green-500">
+                  ✓ PWA Instalado
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-xs">
+                🔄 Service Worker Ativo
+              </Badge>
+            </div>
 
             {isIOS ? (
               <div className="space-y-3">

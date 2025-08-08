@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Clock, Check, X, Award, Shirt, Flag, User, Trash2, Image, Lock, Unlock, Settings, Book, RotateCcw, Newspaper, BarChart3, Users, Info, Inbox, FileText, CheckSquare, BarChart2, TrendingUp } from 'lucide-react';
 import { TaskSubmission, WeeklyAttendance } from '@/types';
 import UnitDisplay from '@/components/UnitDisplay';
+import PWAStatus from '@/components/PWAStatus';
 import UnitManagement from '@/components/UnitManagement';
 import UnitInfoManager from '@/components/UnitInfoManager';
 import AdminNewsManager from '@/components/AdminNewsManager';
@@ -24,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DifficultyBadge, TaskCategoryBadge } from '@/components/Badges';
+import { Badge } from "@/components/ui/badge";
 const AdminDashboard = () => {
   const {
     currentUser,
@@ -541,7 +543,7 @@ const AdminDashboard = () => {
         )}
 
         <Tabs value={activeTab} className="mb-6" onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-11 gap-4 p-4 bg-white rounded-xl shadow-sm">
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-12 gap-4 p-4 bg-white rounded-xl shadow-sm">
             <TabsTrigger value="submissions" onClick={() => scrollToSection("submissions")} className="relative flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
               <div className="relative">
                 <Inbox className="w-6 h-6" />
@@ -606,6 +608,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="statistics" onClick={() => scrollToSection("statistics")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
               <TrendingUp className="w-6 h-6" />
               <span className="text-xs font-medium text-center">Estatísticas</span>
+            </TabsTrigger>
+            <TabsTrigger value="system" onClick={() => scrollToSection("system")} className="flex flex-col items-center justify-center p-3 gap-2 h-auto min-h-[80px] bg-white rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-gray-50 active:scale-95 active:bg-gray-100">
+              <Settings className="w-6 h-6" />
+              <span className="text-xs font-medium text-center">Sistema</span>
             </TabsTrigger>
           </TabsList>
           
@@ -1331,6 +1337,119 @@ const AdminDashboard = () => {
                         </div>
                       );
                     })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* System Status Tab */}
+          <TabsContent value="system" id="system" className="mt-6">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* PWA Status */}
+                <PWAStatus />
+                
+                {/* System Info */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Info className="w-5 h-5" />
+                      Informações do Sistema
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Versão:</p>
+                        <p className="font-medium">2.0.0 PWA</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Build:</p>
+                        <p className="font-medium">{new Date().toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Usuários:</p>
+                        <p className="font-medium">{units.length} unidades</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Navegador:</p>
+                        <p className="font-medium">{navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                                                   navigator.userAgent.includes('Firefox') ? 'Firefox' : 
+                                                   navigator.userAgent.includes('Safari') ? 'Safari' : 'Outro'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-3 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        Sistema de Pontuação da Unidade 85 - Progressive Web App
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Database Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart2 className="w-5 h-5" />
+                    Status da Base de Dados
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <p className="text-2xl font-bold text-blue-600">{tasks.length}</p>
+                      <p className="text-sm text-blue-800">Tarefas</p>
+                    </div>
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <p className="text-2xl font-bold text-green-600">{submissions.length}</p>
+                      <p className="text-sm text-green-800">Envios</p>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <p className="text-2xl font-bold text-purple-600">{attendances.length}</p>
+                      <p className="text-sm text-purple-800">Presenças</p>
+                    </div>
+                    <div className="text-center p-4 bg-orange-50 rounded-lg">
+                      <p className="text-2xl font-bold text-orange-600">{units.length}</p>
+                      <p className="text-sm text-orange-800">Unidades</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Performance Metrics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Métricas de Performance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Tempo de Carregamento</span>
+                      <Badge variant="outline">
+                        {Math.round(performance.now())}ms
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Memória Usada</span>
+                      <Badge variant="outline">
+                        {(performance as any).memory ? 
+                          `${Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024)}MB` : 
+                          'N/A'
+                        }
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">Conexão</span>
+                      <Badge variant={navigator.onLine ? "default" : "destructive"}>
+                        {navigator.onLine ? "Online" : "Offline"}
+                      </Badge>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
