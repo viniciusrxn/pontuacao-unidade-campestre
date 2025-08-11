@@ -63,20 +63,31 @@ const UnitInfoManager: React.FC<UnitInfoManagerProps> = ({ unitId }) => {
       }
 
       if (data) {
-        // Safely parse counselors from JSON
+        // Parse counselors from TEXT[] - convert strings to objects
         let counselors: Counselor[] = [];
         if (Array.isArray(data.counselors)) {
-          counselors = (data.counselors as unknown as Counselor[]).filter(
-            (c): c is Counselor => c && typeof c === 'object' && 'id' in c && 'name' in c
-          );
+          counselors = data.counselors
+            .filter((c): c is string => typeof c === 'string' && c.trim() !== '')
+            .map((name, index) => ({
+              id: `counselor-${index}-${Date.now()}`,
+              name: name.trim()
+            }));
         }
 
-        // Safely parse pathfinders from JSON
+        // Parse pathfinders from TEXT[] - convert strings to objects
+        // Format expected: "Nome do Desbravador|Função" or just "Nome"
         let pathfinders: Pathfinder[] = [];
         if (Array.isArray(data.pathfinders)) {
-          pathfinders = (data.pathfinders as unknown as Pathfinder[]).filter(
-            (p): p is Pathfinder => p && typeof p === 'object' && 'id' in p && 'name' in p && 'role' in p
-          );
+          pathfinders = data.pathfinders
+            .filter((p): p is string => typeof p === 'string' && p.trim() !== '')
+            .map((pathfinderStr, index) => {
+              const parts = pathfinderStr.split('|');
+              return {
+                id: `pathfinder-${index}-${Date.now()}`,
+                name: parts[0]?.trim() || '',
+                role: parts[1]?.trim() || ''
+              };
+            });
         }
 
         setUnitInfo({
@@ -102,10 +113,25 @@ const UnitInfoManager: React.FC<UnitInfoManagerProps> = ({ unitId }) => {
   const saveUnitInfo = async () => {
     setIsSaving(true);
     try {
+      // Convert counselors objects to string array for TEXT[] field
+      const counselorsArray = unitInfo.counselors
+        .filter(c => c.name.trim() !== '')
+        .map(c => c.name.trim());
+
+      // Convert pathfinders objects to string array for TEXT[] field
+      // Format: "Nome|Função" for pathfinders with role, just "Nome" for those without
+      const pathfindersArray = unitInfo.pathfinders
+        .filter(p => p.name.trim() !== '')
+        .map(p => {
+          const name = p.name.trim();
+          const role = p.role.trim();
+          return role ? `${name}|${role}` : name;
+        });
+
       const dataToSave = {
         unit_id: unitId,
-        counselors: unitInfo.counselors as any,
-        pathfinders: unitInfo.pathfinders as any,
+        counselors: counselorsArray,
+        pathfinders: pathfindersArray,
         unit_motto: unitInfo.unitMotto,
         updated_at: new Date().toISOString()
       };
@@ -125,7 +151,9 @@ const UnitInfoManager: React.FC<UnitInfoManagerProps> = ({ unitId }) => {
           .single();
 
         if (error) throw error;
-        setUnitInfo(prev => ({ ...prev, id: data.id }));
+        if (data) {
+          setUnitInfo(prev => ({ ...prev, id: data.id }));
+        }
       }
 
       toast({
