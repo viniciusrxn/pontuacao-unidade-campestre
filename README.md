@@ -1,5 +1,7 @@
 # Ranking Unidade 🏆
 
+- Desenvolvido e idealizado por Vinicius Castro.
+
 Descrição do App
 Aplicativo oficial do Clube de Desbravadores Campestre da Igreja Adventista de Cidade Ademar.
 Trata-se de uma Progressive Web App moderna desenvolvida para gerenciar competições e atividades entre as unidades do clube, com um sistema de pontuação gamificado que incentiva a participação e o espírito de equipe.
