@@ -308,7 +308,8 @@ Encontrou um bug? Tem uma sugestão?
 - **Discussões**: [GitHub Discussions](https://github.com/seu-usuario/pontuacao-unidade/discussions)
 
 ## 🏆 Créditos
-
+- Desenvolvimento e Idealização
+- Vinicius Castro – Diretor do Clube de Desbravadores Campestre, Igreja Adventista do Sétimo Dia – Cidade Ademar.
 ### Tecnologias Principais
 - [React](https://reactjs.org/) - Framework UI
 - [TypeScript](https://www.typescriptlang.org/) - Tipagem estática
@@ -334,6 +335,6 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 [⭐ Dar uma estrela](https://github.com/seu-usuario/pontuacao-unidade) • [🐛 Reportar Bug](https://github.com/seu-usuario/pontuacao-unidade/issues) • [💡 Sugerir Feature](https://github.com/seu-usuario/pontuacao-unidade/issues)
 
-*Sistema de Ranking Unidade - v1.0.0*
+*Sistema de Ranking/pontuação Unidade - v1.2.0*
 
 </div>
