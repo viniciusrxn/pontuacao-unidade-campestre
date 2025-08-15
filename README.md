@@ -1,7 +1,18 @@
 # Ranking Unidade 🏆
 
-Uma Progressive Web App moderna para gerenciar competições entre unidades de desbravadores, com sistema de pontuação gamificado, ranking em tempo real e comunicação integrada.
+Descrição do App
+Aplicativo oficial do Clube de Desbravadores Campestre da Igreja Adventista de Cidade Ademar.
+Trata-se de uma Progressive Web App moderna desenvolvida para gerenciar competições e atividades entre as unidades do clube, com um sistema de pontuação gamificado que incentiva a participação e o espírito de equipe.
 
+Recursos principais:
+
+- **Ranking em tempo real, mostrando a posição de cada unidade.
+- **Registro de tarefas e desafios, com atribuição de pontos automáticos.
+- **Histórico de pontuação, para acompanhar a evolução das equipes.
+- **Comunicação integrada, facilitando o envio de avisos e atualizações.
+- **Compatível com qualquer dispositivo, podendo ser instalada como app no celular ou acessada via navegador.
+
+Nosso objetivo é fortalecer a interação, motivar o aprendizado e promover a amizade cristã por meio de uma experiência interativa e divertida.
 [![Deploy Status](https://img.shields.io/badge/deploy-success-brightgreen)](https://lovable.dev/projects/9d39cee6-a2f2-4a5c-a8ff-c97f28395d93)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-blue)](https://www.typescriptlang.org/)
