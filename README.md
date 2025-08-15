@@ -312,13 +312,6 @@ Encontrou um bug? Tem uma sugestão?
 
 Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
-## 🌟 Agradecimentos
-
-- Todos os contribuidores do projeto
-- Comunidade de desbravadores
-- Equipe do Supabase pela plataforma incrível
-- Desenvolvedores das bibliotecas open source utilizadas
-
 ---
 
 <div align="center">
