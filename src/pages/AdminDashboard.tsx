@@ -411,15 +411,23 @@ const AdminDashboard = () => {
   const confirmDeleteTask = (taskId: string) => {
     setTaskToDelete(taskId);
   };
-  const handleDeleteTask = () => {
+  const handleDeleteTask = async () => {
     if (taskToDelete) {
-      deleteTask(taskToDelete);
-      setTaskToDelete(null);
-      toast({
-        title: "Tarefa deletada",
-        description: "A tarefa foi removida permanentemente.",
-        variant: "default"
-      });
+      try {
+        await deleteTask(taskToDelete);
+        setTaskToDelete(null);
+        toast({
+          title: "Tarefa processada",
+          description: "A tarefa foi removida da lista de disponíveis. Se havia submissões aprovadas, o histórico das unidades foi preservado.",
+          variant: "default"
+        });
+      } catch (error) {
+        toast({
+          title: "Erro ao processar tarefa",
+          description: "Ocorreu um erro ao remover a tarefa. Tente novamente.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -1503,16 +1511,17 @@ const AdminDashboard = () => {
       <AlertDialog open={!!taskToDelete} onOpenChange={() => taskToDelete && setTaskToDelete(null)}>
         <AlertDialogContent className="max-w-xs sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">Apagar tarefa</AlertDialogTitle>
+            <AlertDialogTitle className="text-base sm:text-lg">Remover tarefa</AlertDialogTitle>
             <AlertDialogDescription className="text-xs sm:text-sm">
-              Tem certeza de que deseja excluir esta tarefa? Esta ação não pode ser desfeita.
-              Todos os envios relacionados também serão excluídos.
+              Tem certeza de que deseja remover esta tarefa da lista de disponíveis? 
+              Se houver submissões já aprovadas, elas serão preservadas no histórico das unidades.
+              Caso não haja submissões aprovadas, a tarefa será completamente excluída.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
             <AlertDialogCancel className="text-xs sm:text-sm">Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteTask} className="bg-destructive text-destructive-foreground text-xs sm:text-sm">
-              Deletar
+              Remover
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

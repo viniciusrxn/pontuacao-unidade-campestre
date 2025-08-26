@@ -58,6 +58,11 @@ interface AppContextType {
   fetchUnits: () => Promise<void>;
   isTaskAvailableForUnit: (task: Task, unitId: string) => boolean;
   getTasksForUnit: (unitId: string) => Task[];
+  getTasksWithHistoryForUnit: (unitId: string) => Promise<{
+    available: Task[];
+    completed: Task[];
+    pending: Task[];
+  }>;
   isFormEnabledForUnit: (unitId: string) => boolean;
 }
 
@@ -120,7 +125,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         description: task.description || '',
         points: task.points,
         deadline: task.deadline,
-        status: task.status as 'active' | 'expired',
+        status: task.status as 'active' | 'expired' | 'removed',
         createdAt: task.created_at,
         difficulty: (task.difficulty as 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary') || 'easy',
         category: task.category || 'geral',
@@ -184,7 +189,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const fetchTasks = async () => {
       try {
         const client = supabase;
-        const { data, error } = await client.from('tasks').select('*');
+        // Buscar apenas tarefas que não foram removidas (para interface de admin e unidades)
+        const { data, error } = await client
+          .from('tasks')
+          .select('*')
+          .neq('status', 'removed');
+        
         if (error) throw error;
         const transformedTasks = (data || []).map(transformTask);
         setTasks(transformedTasks);
@@ -419,12 +429,36 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     const deleteTask = async (taskId: string) => {
       try {
-        // First delete related submissions
-        await supabase.from('task_submissions').delete().eq('task_id', taskId);
-        
-        // Then delete the task
-        const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-        if (error) throw error;
+        // Verificar se há submissões aprovadas para esta tarefa
+        const { data: completedSubmissions, error: submissionError } = await supabase
+          .from('task_submissions')
+          .select('*')
+          .eq('task_id', taskId)
+          .eq('status', 'completed');
+
+        if (submissionError) throw submissionError;
+
+        if (completedSubmissions && completedSubmissions.length > 0) {
+          // Se há submissões aprovadas, marcar como removida em vez de deletar
+          const { error } = await supabase
+            .from('tasks')
+            .update({ 
+              status: 'removed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', taskId);
+
+          if (error) throw error;
+          
+          console.log(`Tarefa arquivada (tinha ${completedSubmissions.length} submissões aprovadas)`);
+        } else {
+          // Se não há submissões aprovadas, pode deletar normalmente
+          await supabase.from('task_submissions').delete().eq('task_id', taskId);
+          const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+          if (error) throw error;
+          
+          console.log('Tarefa deletada (sem submissões aprovadas)');
+        }
         
         await fetchTasks();
         await fetchSubmissions();
@@ -631,6 +665,72 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       return tasks.filter(task => isTaskAvailableForUnit(task, unitId));
     };
 
+    // Function to get tasks with history for unit dashboard (includes removed tasks if completed)
+    const getTasksWithHistoryForUnit = async (unitId: string): Promise<{
+      available: Task[];
+      completed: Task[];
+      pending: Task[];
+    }> => {
+      try {
+        // Buscar submissões da unidade
+        const unitSubmissions = submissions.filter(sub => sub.unitId === unitId);
+        const completedSubmissionTaskIds = new Set(
+          unitSubmissions.filter(sub => sub.status === 'completed').map(sub => sub.taskId)
+        );
+        const pendingSubmissionTaskIds = new Set(
+          unitSubmissions.filter(sub => sub.status === 'pending').map(sub => sub.taskId)
+        );
+
+        // Para tarefas concluídas, buscar também as removidas se houver submissão aprovada
+        const { data: allTasks, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .or(`status.neq.removed,and(status.eq.removed,id.in.(${Array.from(completedSubmissionTaskIds).join(',') || 'null'}))`);
+
+        if (error) throw error;
+
+        const allTransformedTasks = (allTasks || []).map(transformTask);
+        
+        // Separar tarefas por categoria
+        const available = allTransformedTasks.filter(task => 
+          task.status !== 'removed' && 
+          isTaskAvailableForUnit(task, unitId) && 
+          !completedSubmissionTaskIds.has(task.id) && 
+          !pendingSubmissionTaskIds.has(task.id)
+        );
+
+        const completed = allTransformedTasks.filter(task => 
+          completedSubmissionTaskIds.has(task.id)
+        );
+
+        const pending = allTransformedTasks.filter(task => 
+          task.status !== 'removed' &&
+          pendingSubmissionTaskIds.has(task.id)
+        );
+
+        return { available, completed, pending };
+      } catch (error) {
+        console.error('Error fetching tasks with history:', error);
+        // Fallback para método normal se houver erro
+        const availableTasks = getTasksForUnit(unitId);
+        const unitSubmissions = submissions.filter(sub => sub.unitId === unitId);
+        const completedTaskIds = new Set(
+          unitSubmissions.filter(sub => sub.status === 'completed').map(sub => sub.taskId)
+        );
+        const pendingTaskIds = new Set(
+          unitSubmissions.filter(sub => sub.status === 'pending').map(sub => sub.taskId)
+        );
+
+        return {
+          available: availableTasks.filter(task => 
+            !completedTaskIds.has(task.id) && !pendingTaskIds.has(task.id)
+          ),
+          completed: availableTasks.filter(task => completedTaskIds.has(task.id)),
+          pending: availableTasks.filter(task => pendingTaskIds.has(task.id))
+        };
+      }
+    };
+
     // Alternative storage for task targeting when migration is not applied
     const storeTaskTargeting = async (taskId: string, targetUnits: string[]) => {
       try {
@@ -776,6 +876,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       fetchUnits,
       isTaskAvailableForUnit,
       getTasksForUnit,
+      getTasksWithHistoryForUnit,
       isFormEnabledForUnit
     };
 

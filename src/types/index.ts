@@ -19,7 +19,7 @@ export interface Task {
   description: string;
   points: number;
   deadline: string;
-  status: 'active' | 'expired';
+  status: 'active' | 'expired' | 'removed';
   createdAt: string;
   difficulty?: 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary';
   category?: string;

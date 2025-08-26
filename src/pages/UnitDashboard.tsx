@@ -24,7 +24,7 @@ import TaskSearch from '@/components/TaskSearch';
 import TaskOverview from '@/components/TaskOverview';
 
 const UnitDashboard = () => {
-  const { currentUser, units, tasks, submissions, submitTask, getTasksForUnit } = useAppContext();
+  const { currentUser, units, tasks, submissions, submitTask, getTasksForUnit, getTasksWithHistoryForUnit } = useAppContext();
   const { news } = useCommunication();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,6 +36,11 @@ const UnitDashboard = () => {
   const [filteredAvailableTasks, setFilteredAvailableTasks] = useState<Task[]>([]);
   const [filteredPendingTasks, setFilteredPendingTasks] = useState<Task[]>([]);
   const [filteredCompletedTasks, setFilteredCompletedTasks] = useState<Task[]>([]);
+  
+  // Estados para tarefas com histórico preservado
+  const [availableTasks, setAvailableTasks] = useState<Task[]>([]);
+  const [pendingTasks, setPendingTasks] = useState<Task[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
 
 
   // Redireciona se não estiver logado como unidade
@@ -45,6 +50,45 @@ const UnitDashboard = () => {
     }
   }, [currentUser, navigate]);
 
+  // Carregar tarefas com histórico preservado
+  React.useEffect(() => {
+    const loadTasksWithHistory = async () => {
+      if (currentUser?.type === 'unit' && currentUser.unitId) {
+        try {
+          const tasksData = await getTasksWithHistoryForUnit(currentUser.unitId);
+          setAvailableTasks(tasksData.available);
+          setPendingTasks(tasksData.pending);
+          setCompletedTasks(tasksData.completed);
+        } catch (error) {
+          console.error('Error loading tasks with history:', error);
+          // Fallback para método antigo se houver erro
+          const currentUnit = units.find(unit => unit.id === currentUser.unitId);
+          if (currentUnit) {
+            const unitSubmissions = submissions.filter(s => s.unitId === currentUnit.id);
+            const completedTaskIds = new Set(unitSubmissions
+              .filter(s => s.status === 'completed')
+              .map(s => s.taskId));
+            const pendingTaskIds = new Set(unitSubmissions
+              .filter(s => s.status === 'pending')
+              .map(s => s.taskId));
+            
+            const unitAvailableTasks = getTasksForUnit(currentUnit.id);
+            
+            setAvailableTasks(unitAvailableTasks.filter(task => 
+              task.status === 'active' && 
+              !completedTaskIds.has(task.id) &&
+              !pendingTaskIds.has(task.id)
+            ));
+            setPendingTasks(unitAvailableTasks.filter(task => pendingTaskIds.has(task.id)));
+            setCompletedTasks(unitAvailableTasks.filter(task => completedTaskIds.has(task.id)));
+          }
+        }
+      }
+    };
+
+    loadTasksWithHistory();
+  }, [currentUser, units, submissions, tasks, getTasksForUnit, getTasksWithHistoryForUnit]);
+
   if (!currentUser || currentUser.type !== 'unit') {
     return null;
   }
@@ -52,28 +96,8 @@ const UnitDashboard = () => {
   const currentUnit = units.find(unit => unit.id === currentUser.unitId);
   if (!currentUnit) return null;
 
-  // Obtém as submissões da unidade
+  // Obtém as submissões da unidade para uso em funções auxiliares
   const unitSubmissions = submissions.filter(s => s.unitId === currentUnit.id);
-  
-  const completedTaskIds = new Set(unitSubmissions
-    .filter(s => s.status === 'completed')
-    .map(s => s.taskId));
-    
-  const pendingTaskIds = new Set(unitSubmissions
-    .filter(s => s.status === 'pending')
-    .map(s => s.taskId));
-  
-  // Filtra apenas as tarefas disponíveis para esta unidade específica
-  const unitAvailableTasks = getTasksForUnit(currentUnit.id);
-  
-  const availableTasks = unitAvailableTasks.filter(task => 
-    task.status === 'active' && 
-    !completedTaskIds.has(task.id) &&
-    !pendingTaskIds.has(task.id)
-  );
-  
-  const pendingTasks = unitAvailableTasks.filter(task => pendingTaskIds.has(task.id));
-  const completedTasks = unitAvailableTasks.filter(task => completedTaskIds.has(task.id));
 
   const handleTaskSubmission = () => {
     if (!selectedTaskId || !submissionProof.trim()) {
@@ -430,7 +454,7 @@ const UnitDashboard = () => {
                   Estatísticas das Tarefas
                 </h3>
                 <TaskStats
-                  tasks={unitAvailableTasks}
+                  tasks={[...availableTasks, ...pendingTasks, ...completedTasks]}
                   completedTasks={completedTasks}
                   pendingTasks={pendingTasks}
                 />
