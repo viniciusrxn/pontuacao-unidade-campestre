@@ -189,11 +189,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const fetchTasks = async () => {
       try {
         const client = supabase;
-        // Buscar apenas tarefas que não foram removidas (para interface de admin e unidades)
+        
+        // Buscar tarefas excluindo as que foram "arquivadas" (marcadas como expiradas com deadline antigo)
         const { data, error } = await client
           .from('tasks')
           .select('*')
-          .neq('status', 'removed');
+          .not('deadline', 'eq', '1900-01-01T00:00:00.000Z');
         
         if (error) throw error;
         const transformedTasks = (data || []).map(transformTask);
@@ -429,6 +430,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     const deleteTask = async (taskId: string) => {
       try {
+        console.log('Attempting to delete task:', taskId);
+        
         // Verificar se há submissões aprovadas para esta tarefa
         const { data: completedSubmissions, error: submissionError } = await supabase
           .from('task_submissions')
@@ -436,34 +439,50 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           .eq('task_id', taskId)
           .eq('status', 'completed');
 
-        if (submissionError) throw submissionError;
+        if (submissionError) {
+          console.error('Error checking submissions:', submissionError);
+          throw submissionError;
+        }
+
+        console.log('Found completed submissions:', completedSubmissions?.length || 0);
 
         if (completedSubmissions && completedSubmissions.length > 0) {
-          // Se há submissões aprovadas, marcar como removida em vez de deletar
-          const { error } = await supabase
+          // Se há submissões aprovadas, marcar como expirada em vez de deletar
+          // Isso preserva o histórico sem precisar da migration
+          console.log('Marking task as expired to preserve history...');
+          const { error: updateError } = await supabase
             .from('tasks')
             .update({ 
-              status: 'removed',
-              updated_at: new Date().toISOString()
+              status: 'expired',
+              updated_at: new Date().toISOString(),
+              // Adicionar um timestamp muito antigo para que não apareça em listas normais
+              deadline: '1900-01-01T00:00:00.000Z'
             })
             .eq('id', taskId);
 
-          if (error) throw error;
+          if (updateError) {
+            console.error('Error updating task status to expired:', updateError);
+            throw updateError;
+          }
           
-          console.log(`Tarefa arquivada (tinha ${completedSubmissions.length} submissões aprovadas)`);
+          console.log(`Tarefa marcada como expirada para preservar histórico (tinha ${completedSubmissions.length} submissões aprovadas)`);
         } else {
-          // Se não há submissões aprovadas, pode deletar normalmente
+          // Se não há submissões aprovadas, deletar normalmente
+          console.log('Deleting task completely (no completed submissions)...');
           await supabase.from('task_submissions').delete().eq('task_id', taskId);
-          const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-          if (error) throw error;
-          
+          const { error: deleteError } = await supabase.from('tasks').delete().eq('id', taskId);
+          if (deleteError) {
+            console.error('Error deleting task:', deleteError);
+            throw deleteError;
+          }
           console.log('Tarefa deletada (sem submissões aprovadas)');
         }
         
         await fetchTasks();
         await fetchSubmissions();
+        console.log('Task deletion completed successfully');
       } catch (error) {
-        console.error('Error deleting task:', error);
+        console.error('Error in deleteTask function:', error);
         throw error;
       }
     };
@@ -681,19 +700,36 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           unitSubmissions.filter(sub => sub.status === 'pending').map(sub => sub.taskId)
         );
 
-        // Para tarefas concluídas, buscar também as removidas se houver submissão aprovada
-        const { data: allTasks, error } = await supabase
+        // Buscar tarefas normais
+        const { data: normalTasks, error: normalError } = await supabase
           .from('tasks')
           .select('*')
-          .or(`status.neq.removed,and(status.eq.removed,id.in.(${Array.from(completedSubmissionTaskIds).join(',') || 'null'}))`);
+          .not('deadline', 'eq', '1900-01-01T00:00:00.000Z');
 
-        if (error) throw error;
+        if (normalError) throw normalError;
 
-        const allTransformedTasks = (allTasks || []).map(transformTask);
+        // Buscar tarefas arquivadas que foram concluídas por esta unidade
+        let archivedCompletedTasks: any[] = [];
+        if (completedSubmissionTaskIds.size > 0) {
+          const { data: archivedTasks, error: archivedError } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('deadline', '1900-01-01T00:00:00.000Z')
+            .in('id', Array.from(completedSubmissionTaskIds));
+
+          if (archivedError) {
+            console.warn('Error fetching archived completed tasks:', archivedError);
+          } else {
+            archivedCompletedTasks = archivedTasks || [];
+          }
+        }
+
+        const allTasks = [...(normalTasks || []), ...archivedCompletedTasks];
+        const allTransformedTasks = allTasks.map(transformTask);
         
         // Separar tarefas por categoria
         const available = allTransformedTasks.filter(task => 
-          task.status !== 'removed' && 
+          task.deadline !== '1900-01-01T00:00:00.000Z' && 
           isTaskAvailableForUnit(task, unitId) && 
           !completedSubmissionTaskIds.has(task.id) && 
           !pendingSubmissionTaskIds.has(task.id)
@@ -704,7 +740,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         );
 
         const pending = allTransformedTasks.filter(task => 
-          task.status !== 'removed' &&
+          task.deadline !== '1900-01-01T00:00:00.000Z' &&
           pendingSubmissionTaskIds.has(task.id)
         );
 
