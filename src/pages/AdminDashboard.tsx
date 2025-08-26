@@ -801,15 +801,15 @@ const AdminDashboard = () => {
 
               {/* Task Management Tabs */}
               <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg sm:text-xl">Gerenciamento de Tarefas</CardTitle>
-                    <div className="flex items-center gap-2">
+                <CardHeader className="pb-3 px-3 sm:px-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <CardTitle className="text-base sm:text-lg lg:text-xl">Gerenciamento de Tarefas</CardTitle>
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2">
                       <Button
                         variant={taskActiveTab === 'create' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setTaskActiveTab('create')}
-                        className="text-xs"
+                        className="text-xs px-2 sm:px-3"
                       >
                         Criar
                       </Button>
@@ -817,42 +817,50 @@ const AdminDashboard = () => {
                         variant={taskActiveTab === 'manage' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setTaskActiveTab('manage')}
-                        className="text-xs"
+                        className="text-xs px-2 sm:px-3"
                       >
-                        Gerenciar ({tasks.length})
+                        <span className="hidden xs:inline">Gerenciar </span>({tasks.length})
                       </Button>
                       <Button
                         variant={taskActiveTab === 'stats' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setTaskActiveTab('stats')}
-                        className="text-xs"
+                        className="text-xs px-2 sm:px-3"
                       >
-                        Estatísticas
+                        <span className="hidden xs:inline">Estatísticas</span>
+                        <span className="xs:hidden">Stats</span>
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {taskActiveTab === 'create' && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Criar Nova Tarefa</h3>
+                    <div className="px-1 sm:px-0">
+                      <h3 className="text-base sm:text-lg font-semibold mb-4">Criar Nova Tarefa</h3>
                       <form onSubmit={handleCreateTask} className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4">
                           <div>
-                            <Label htmlFor="title">Título da Tarefa</Label>
-                            <Input id="title" value={newTask.title} onChange={e => setNewTask({
-                            ...newTask,
-                            title: e.target.value
-                          })} placeholder="Digite o título da tarefa" required />
+                            <Label htmlFor="title" className="text-sm">Título da Tarefa</Label>
+                            <Input 
+                              id="title" 
+                              value={newTask.title} 
+                              onChange={e => setNewTask({
+                                ...newTask,
+                                title: e.target.value
+                              })} 
+                              placeholder="Digite o título da tarefa" 
+                              required 
+                              className="text-sm"
+                            />
                           </div>
                           
                           <div>
-                            <Label htmlFor="category">Categoria</Label>
+                            <Label htmlFor="category" className="text-sm">Categoria</Label>
                             <Select value={newTask.category} onValueChange={value => setNewTask({
                             ...newTask,
                             category: value
                           })}>
-                              <SelectTrigger>
+                              <SelectTrigger className="text-sm">
                                 <SelectValue placeholder="Selecione a categoria" />
                               </SelectTrigger>
                               <SelectContent>
@@ -869,29 +877,45 @@ const AdminDashboard = () => {
                         </div>
 
                         <div>
-                          <Label htmlFor="description">Descrição</Label>
-                          <Input id="description" value={newTask.description} onChange={e => setNewTask({
-                          ...newTask,
-                          description: e.target.value
-                        })} placeholder="Descreva o que precisa ser feito" required />
+                          <Label htmlFor="description" className="text-sm">Descrição</Label>
+                          <Input 
+                            id="description" 
+                            value={newTask.description} 
+                            onChange={e => setNewTask({
+                              ...newTask,
+                              description: e.target.value
+                            })} 
+                            placeholder="Descreva o que precisa ser feito" 
+                            required 
+                            className="text-sm"
+                          />
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div>
-                            <Label htmlFor="points">Pontuação</Label>
-                            <Input id="points" type="number" min="1" max="10000" value={newTask.points} onChange={e => setNewTask({
-                            ...newTask,
-                            points: parseInt(e.target.value) || 50
-                          })} required />
+                            <Label htmlFor="points" className="text-sm">Pontuação</Label>
+                            <Input 
+                              id="points" 
+                              type="number" 
+                              min="1" 
+                              max="10000" 
+                              value={newTask.points} 
+                              onChange={e => setNewTask({
+                                ...newTask,
+                                points: parseInt(e.target.value) || 50
+                              })} 
+                              required 
+                              className="text-sm"
+                            />
                           </div>
                           
                           <div>
-                            <Label htmlFor="difficulty">Dificuldade</Label>
+                            <Label htmlFor="difficulty" className="text-sm">Dificuldade</Label>
                             <Select value={newTask.difficulty} onValueChange={(value: 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary') => setNewTask({
                             ...newTask,
                             difficulty: value
                           })}>
-                              <SelectTrigger>
+                              <SelectTrigger className="text-sm">
                                 <SelectValue placeholder="Dificuldade" />
                               </SelectTrigger>
                               <SelectContent>
@@ -905,11 +929,18 @@ const AdminDashboard = () => {
                           </div>
                           
                           <div>
-                            <Label htmlFor="deadline">Prazo</Label>
-                            <Input id="deadline" type="date" value={newTask.deadline} onChange={e => setNewTask({
-                            ...newTask,
-                            deadline: e.target.value
-                          })} required />
+                            <Label htmlFor="deadline" className="text-sm">Prazo</Label>
+                            <Input 
+                              id="deadline" 
+                              type="date" 
+                              value={newTask.deadline} 
+                              onChange={e => setNewTask({
+                                ...newTask,
+                                deadline: e.target.value
+                              })} 
+                              required 
+                              className="text-sm"
+                            />
                           </div>
                         </div>
 
@@ -926,7 +957,7 @@ const AdminDashboard = () => {
                                 onChange={() => setTaskTargetMode('all')}
                                 className="w-4 h-4"
                               />
-                              <Label htmlFor="target-all" className="text-sm">
+                              <Label htmlFor="target-all" className="text-sm cursor-pointer">
                                 Todas as unidades (tarefa global)
                               </Label>
                             </div>
@@ -940,17 +971,17 @@ const AdminDashboard = () => {
                                 onChange={() => setTaskTargetMode('selected')}
                                 className="w-4 h-4"
                               />
-                              <Label htmlFor="target-selected" className="text-sm">
+                              <Label htmlFor="target-selected" className="text-sm cursor-pointer">
                                 Unidades específicas
                               </Label>
                             </div>
                             
                             {taskTargetMode === 'selected' && (
-                              <div className="ml-6 mt-3 p-3 bg-gray-50 rounded-lg">
+                              <div className="ml-2 sm:ml-6 mt-3 p-3 bg-gray-50 rounded-lg">
                                 <Label className="text-sm font-medium mb-2 block">
                                   Selecione as unidades:
                                 </Label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
                                   {units.map(unit => (
                                     <div key={unit.id} className="flex items-center space-x-2">
                                       <Checkbox
@@ -965,7 +996,7 @@ const AdminDashboard = () => {
                                       />
                                       <Label 
                                         htmlFor={`unit-${unit.id}`} 
-                                        className="text-sm cursor-pointer flex-1"
+                                        className="text-sm cursor-pointer flex-1 break-words"
                                       >
                                         {unit.name}
                                       </Label>
@@ -984,7 +1015,7 @@ const AdminDashboard = () => {
 
                         <Button 
                           type="submit" 
-                          className="w-full bg-primary"
+                          className="w-full bg-primary text-sm"
                           disabled={taskTargetMode === 'selected' && Object.values(selectedTaskUnits).filter(Boolean).length === 0}
                         >
                           {taskTargetMode === 'all' 
@@ -997,10 +1028,10 @@ const AdminDashboard = () => {
                   )}
 
                   {taskActiveTab === 'manage' && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Tarefas Existentes ({tasks.length})</h3>
-                        <Badge variant="outline">
+                    <div className="space-y-4 px-1 sm:px-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h3 className="text-base sm:text-lg font-semibold">Tarefas Existentes ({tasks.length})</h3>
+                        <Badge variant="outline" className="text-xs self-start sm:self-auto">
                           {tasks.filter(t => t.status === 'active').length} ativas • {tasks.filter(t => t.status === 'expired').length} expiradas
                         </Badge>
                       </div>
@@ -1027,58 +1058,61 @@ const AdminDashboard = () => {
                           <TaskOrganizer
                             tasks={filteredTasks.length > 0 ? filteredTasks : tasks}
                             renderTaskCard={(task) => (
-                              <Card key={task.id} className="p-4">
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                              <Card key={task.id} className="p-2 sm:p-4">
+                                <div className="flex flex-col gap-3">
                                   <div className="flex-1">
-                                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                                      <h4 className="font-medium text-sm sm:text-base">{task.title}</h4>
-                                      <DifficultyBadge difficulty={task.difficulty || 'easy'} />
-                                      {task.category && <TaskCategoryBadge category={task.category} />}
-                                      {task.targetUnits && task.targetUnits.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-2">
+                                      <h4 className="font-medium text-sm sm:text-base break-words min-w-0 flex-1">{task.title}</h4>
+                                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                                        <DifficultyBadge difficulty={task.difficulty || 'easy'} />
+                                        {task.category && <TaskCategoryBadge category={task.category} />}
+                                        {task.targetUnits && task.targetUnits.length > 0 && (
+                                          <Badge 
+                                            variant="secondary"
+                                            className="cursor-help text-xs"
+                                            title={`Direcionada para: ${task.targetUnits.map(unitId => units.find(u => u.id === unitId)?.name || 'Unidade não encontrada').join(', ')}`}
+                                          >
+                                            🎯 {task.targetUnits.length}
+                                          </Badge>
+                                        )}
+                                        {(!task.targetUnits || task.targetUnits.length === 0) && (
+                                          <Badge variant="secondary" className="text-xs">
+                                            🌐
+                                          </Badge>
+                                        )}
                                         <Badge 
-                                          variant="secondary"
-                                          className="cursor-help text-xs"
-                                          title={`Direcionada para: ${task.targetUnits.map(unitId => units.find(u => u.id === unitId)?.name || 'Unidade não encontrada').join(', ')}`}
+                                          variant={task.status === 'active' ? 'default' : 'destructive'}
+                                          className="text-xs"
                                         >
-                                          🎯 {task.targetUnits.length} unidade{task.targetUnits.length !== 1 ? 's' : ''}
+                                          {task.status === 'active' ? '✅' : '❌'}
                                         </Badge>
-                                      )}
-                                      {(!task.targetUnits || task.targetUnits.length === 0) && (
-                                        <Badge variant="secondary" className="text-xs">
-                                          🌐 Global
-                                        </Badge>
-                                      )}
-                                      <Badge 
-                                        variant={task.status === 'active' ? 'default' : 'destructive'}
-                                        className="text-xs"
-                                      >
-                                        {task.status === 'active' ? '✅ Ativa' : '❌ Expirada'}
-                                      </Badge>
+                                      </div>
                                     </div>
-                                    <p className="text-xs sm:text-sm text-gray-600 mb-2">{task.description}</p>
-                                    <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-gray-500">
-                                      <span className="flex items-center gap-1">
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-2 break-words">{task.description}</p>
+                                    <div className="flex flex-wrap gap-2 sm:gap-4 text-xs text-gray-500">
+                                      <span className="flex items-center gap-1 whitespace-nowrap">
                                         📅 {new Date(task.deadline).toLocaleDateString()}
                                       </span>
-                                      <span className="flex items-center gap-1">
-                                        ⭐ {task.points} pontos
+                                      <span className="flex items-center gap-1 whitespace-nowrap">
+                                        ⭐ {task.points} pts
                                       </span>
-                                      <span className="flex items-center gap-1">
-                                        📊 {submissions.filter(s => s.taskId === task.id).length} envios
+                                      <span className="flex items-center gap-1 whitespace-nowrap">
+                                        📊 {submissions.filter(s => s.taskId === task.id).length}
                                       </span>
-                                      <span className="flex items-center gap-1">
-                                        ✅ {submissions.filter(s => s.taskId === task.id && s.status === 'completed').length} aprovados
+                                      <span className="flex items-center gap-1 whitespace-nowrap">
+                                        ✅ {submissions.filter(s => s.taskId === task.id && s.status === 'completed').length}
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex justify-end">
                                     <Button 
                                       onClick={() => confirmDeleteTask(task.id)} 
                                       variant="destructive" 
                                       size="sm"
+                                      className="text-xs px-2 sm:px-3"
                                     >
-                                      <Trash2 className="w-4 h-4" />
-                                      Remover
+                                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      <span className="hidden sm:inline ml-1">Remover</span>
                                     </Button>
                                   </div>
                                 </div>
@@ -1092,8 +1126,8 @@ const AdminDashboard = () => {
                   )}
 
                   {taskActiveTab === 'stats' && (
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold">Estatísticas das Tarefas</h3>
+                    <div className="space-y-6 px-1 sm:px-0">
+                      <h3 className="text-base sm:text-lg font-semibold">Estatísticas das Tarefas</h3>
                       
                       <TaskStats
                         tasks={tasks}
