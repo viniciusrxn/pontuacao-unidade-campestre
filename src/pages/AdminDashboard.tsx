@@ -26,6 +26,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DifficultyBadge, TaskCategoryBadge } from '@/components/Badges';
 import { Badge } from "@/components/ui/badge";
+import TaskOrganizer from '@/components/TaskOrganizer';
+import TaskSearch from '@/components/TaskSearch';
+import TaskStats from '@/components/TaskStats';
+import TaskOverview from '@/components/TaskOverview';
 const AdminDashboard = () => {
   const {
     currentUser,
@@ -89,6 +93,10 @@ const AdminDashboard = () => {
   // Reset statistics state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showAdminPasswordPrompt, setShowAdminPasswordPrompt] = useState(false);
+
+  // Task management states
+  const [taskActiveTab, setTaskActiveTab] = useState<'create' | 'manage' | 'stats'>('create');
+  const [filteredTasks, setFilteredTasks] = useState<typeof tasks>([]);
 
   // Scroll to section function
   const scrollToSection = (sectionId: string) => {
@@ -783,214 +791,366 @@ const AdminDashboard = () => {
           
           {/* Manage Tasks Tab */}
           <TabsContent value="tasks" id="tasks" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Criar Nova Tarefa</CardTitle>
-                <CardDescription>Adicione uma nova tarefa para as unidades completarem</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateTask} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="title">Título da Tarefa</Label>
-                      <Input id="title" value={newTask.title} onChange={e => setNewTask({
-                      ...newTask,
-                      title: e.target.value
-                    })} placeholder="Digite o título da tarefa" required />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="category">Categoria</Label>
-                      <Select value={newTask.category} onValueChange={value => setNewTask({
-                      ...newTask,
-                      category: value
-                    })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="geral">Geral</SelectItem>
-                          <SelectItem value="estudo">Estudo</SelectItem>
-                          <SelectItem value="social">Social</SelectItem>
-                          <SelectItem value="espiritual">Espiritual</SelectItem>
-                          <SelectItem value="atividade">Atividade</SelectItem>
-                          <SelectItem value="missao">Missão</SelectItem>
-                          <SelectItem value="comunidade">Comunidade</SelectItem>
-                        </SelectContent>
-                      </Select>
+            <div className="space-y-6">
+              {/* Task Overview */}
+              <TaskOverview
+                availableTasks={tasks.filter(t => t.status === 'active')}
+                pendingTasks={submissions.filter(s => s.status === 'pending').map(s => tasks.find(t => t.id === s.taskId)).filter(Boolean) as typeof tasks}
+                completedTasks={submissions.filter(s => s.status === 'completed').map(s => tasks.find(t => t.id === s.taskId)).filter(Boolean) as typeof tasks}
+              />
+
+              {/* Task Management Tabs */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg sm:text-xl">Gerenciamento de Tarefas</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={taskActiveTab === 'create' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTaskActiveTab('create')}
+                        className="text-xs"
+                      >
+                        Criar
+                      </Button>
+                      <Button
+                        variant={taskActiveTab === 'manage' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTaskActiveTab('manage')}
+                        className="text-xs"
+                      >
+                        Gerenciar ({tasks.length})
+                      </Button>
+                      <Button
+                        variant={taskActiveTab === 'stats' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTaskActiveTab('stats')}
+                        className="text-xs"
+                      >
+                        Estatísticas
+                      </Button>
                     </div>
                   </div>
-
-                  <div>
-                    <Label htmlFor="description">Descrição</Label>
-                    <Input id="description" value={newTask.description} onChange={e => setNewTask({
-                    ...newTask,
-                    description: e.target.value
-                  })} placeholder="Descreva o que precisa ser feito" required />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                </CardHeader>
+                <CardContent>
+                  {taskActiveTab === 'create' && (
                     <div>
-                      <Label htmlFor="points">Pontuação</Label>
-                      <Input id="points" type="number" min="1" max="10000" value={newTask.points} onChange={e => setNewTask({
-                      ...newTask,
-                      points: parseInt(e.target.value) || 50
-                    })} required />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="difficulty">Dificuldade</Label>
-                      <Select value={newTask.difficulty} onValueChange={(value: 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary') => setNewTask({
-                      ...newTask,
-                      difficulty: value
-                    })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Dificuldade" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="easy">Fácil (Azul)</SelectItem>
-                          <SelectItem value="medium">Médio (Verde)</SelectItem>
-                          <SelectItem value="hard">Difícil (Vermelho)</SelectItem>
-                          <SelectItem value="very_hard">Muito Difícil (Cinza)</SelectItem>
-                          <SelectItem value="legendary">Lendário (Amarelo)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="deadline">Prazo</Label>
-                      <Input id="deadline" type="date" value={newTask.deadline} onChange={e => setNewTask({
-                      ...newTask,
-                      deadline: e.target.value
-                    })} required />
-                    </div>
-                  </div>
-
-                  {/* Task Targeting Section */}
-                  <div className="border-t pt-4">
-                    <Label className="text-sm font-medium mb-3 block">Direcionamento da Tarefa</Label>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="target-all"
-                          name="taskTarget"
-                          checked={taskTargetMode === 'all'}
-                          onChange={() => setTaskTargetMode('all')}
-                          className="w-4 h-4"
-                        />
-                        <Label htmlFor="target-all" className="text-sm">
-                          Todas as unidades (tarefa global)
-                        </Label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="target-selected"
-                          name="taskTarget"
-                          checked={taskTargetMode === 'selected'}
-                          onChange={() => setTaskTargetMode('selected')}
-                          className="w-4 h-4"
-                        />
-                        <Label htmlFor="target-selected" className="text-sm">
-                          Unidades específicas
-                        </Label>
-                      </div>
-                      
-                      {taskTargetMode === 'selected' && (
-                        <div className="ml-6 mt-3 p-3 bg-gray-50 rounded-lg">
-                          <Label className="text-sm font-medium mb-2 block">
-                            Selecione as unidades:
-                          </Label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                            {units.map(unit => (
-                              <div key={unit.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`unit-${unit.id}`}
-                                  checked={selectedTaskUnits[unit.id] || false}
-                                  onCheckedChange={(checked) => 
-                                    setSelectedTaskUnits(prev => ({
-                                      ...prev,
-                                      [unit.id]: checked as boolean
-                                    }))
-                                  }
-                                />
-                                <Label 
-                                  htmlFor={`unit-${unit.id}`} 
-                                  className="text-sm cursor-pointer flex-1"
-                                >
-                                  {unit.name}
-                                </Label>
-                              </div>
-                            ))}
+                      <h3 className="text-lg font-semibold mb-4">Criar Nova Tarefa</h3>
+                      <form onSubmit={handleCreateTask} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="title">Título da Tarefa</Label>
+                            <Input id="title" value={newTask.title} onChange={e => setNewTask({
+                            ...newTask,
+                            title: e.target.value
+                          })} placeholder="Digite o título da tarefa" required />
                           </div>
-                          {taskTargetMode === 'selected' && Object.values(selectedTaskUnits).filter(Boolean).length === 0 && (
-                            <p className="text-xs text-orange-600 mt-2">
-                              ⚠️ Selecione pelo menos uma unidade
-                            </p>
-                          )}
+                          
+                          <div>
+                            <Label htmlFor="category">Categoria</Label>
+                            <Select value={newTask.category} onValueChange={value => setNewTask({
+                            ...newTask,
+                            category: value
+                          })}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a categoria" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="geral">Geral</SelectItem>
+                                <SelectItem value="estudo">Estudo</SelectItem>
+                                <SelectItem value="social">Social</SelectItem>
+                                <SelectItem value="espiritual">Espiritual</SelectItem>
+                                <SelectItem value="atividade">Atividade</SelectItem>
+                                <SelectItem value="missao">Missão</SelectItem>
+                                <SelectItem value="comunidade">Comunidade</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="description">Descrição</Label>
+                          <Input id="description" value={newTask.description} onChange={e => setNewTask({
+                          ...newTask,
+                          description: e.target.value
+                        })} placeholder="Descreva o que precisa ser feito" required />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div>
+                            <Label htmlFor="points">Pontuação</Label>
+                            <Input id="points" type="number" min="1" max="10000" value={newTask.points} onChange={e => setNewTask({
+                            ...newTask,
+                            points: parseInt(e.target.value) || 50
+                          })} required />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="difficulty">Dificuldade</Label>
+                            <Select value={newTask.difficulty} onValueChange={(value: 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary') => setNewTask({
+                            ...newTask,
+                            difficulty: value
+                          })}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Dificuldade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="easy">Fácil (Azul)</SelectItem>
+                                <SelectItem value="medium">Médio (Verde)</SelectItem>
+                                <SelectItem value="hard">Difícil (Vermelho)</SelectItem>
+                                <SelectItem value="very_hard">Muito Difícil (Cinza)</SelectItem>
+                                <SelectItem value="legendary">Lendário (Amarelo)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="deadline">Prazo</Label>
+                            <Input id="deadline" type="date" value={newTask.deadline} onChange={e => setNewTask({
+                            ...newTask,
+                            deadline: e.target.value
+                          })} required />
+                          </div>
+                        </div>
+
+                        {/* Task Targeting Section */}
+                        <div className="border-t pt-4">
+                          <Label className="text-sm font-medium mb-3 block">Direcionamento da Tarefa</Label>
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="target-all"
+                                name="taskTarget"
+                                checked={taskTargetMode === 'all'}
+                                onChange={() => setTaskTargetMode('all')}
+                                className="w-4 h-4"
+                              />
+                              <Label htmlFor="target-all" className="text-sm">
+                                Todas as unidades (tarefa global)
+                              </Label>
+                            </div>
+                            
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="target-selected"
+                                name="taskTarget"
+                                checked={taskTargetMode === 'selected'}
+                                onChange={() => setTaskTargetMode('selected')}
+                                className="w-4 h-4"
+                              />
+                              <Label htmlFor="target-selected" className="text-sm">
+                                Unidades específicas
+                              </Label>
+                            </div>
+                            
+                            {taskTargetMode === 'selected' && (
+                              <div className="ml-6 mt-3 p-3 bg-gray-50 rounded-lg">
+                                <Label className="text-sm font-medium mb-2 block">
+                                  Selecione as unidades:
+                                </Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                                  {units.map(unit => (
+                                    <div key={unit.id} className="flex items-center space-x-2">
+                                      <Checkbox
+                                        id={`unit-${unit.id}`}
+                                        checked={selectedTaskUnits[unit.id] || false}
+                                        onCheckedChange={(checked) => 
+                                          setSelectedTaskUnits(prev => ({
+                                            ...prev,
+                                            [unit.id]: checked as boolean
+                                          }))
+                                        }
+                                      />
+                                      <Label 
+                                        htmlFor={`unit-${unit.id}`} 
+                                        className="text-sm cursor-pointer flex-1"
+                                      >
+                                        {unit.name}
+                                      </Label>
+                                    </div>
+                                  ))}
+                                </div>
+                                {taskTargetMode === 'selected' && Object.values(selectedTaskUnits).filter(Boolean).length === 0 && (
+                                  <p className="text-xs text-orange-600 mt-2">
+                                    ⚠️ Selecione pelo menos uma unidade
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <Button 
+                          type="submit" 
+                          className="w-full bg-primary"
+                          disabled={taskTargetMode === 'selected' && Object.values(selectedTaskUnits).filter(Boolean).length === 0}
+                        >
+                          {taskTargetMode === 'all' 
+                            ? 'Criar Tarefa (Todas as Unidades)' 
+                            : `Criar Tarefa (${Object.values(selectedTaskUnits).filter(Boolean).length} unidade${Object.values(selectedTaskUnits).filter(Boolean).length !== 1 ? 's' : ''})`
+                          }
+                        </Button>
+                      </form>
+                    </div>
+                  )}
+
+                  {taskActiveTab === 'manage' && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold">Tarefas Existentes ({tasks.length})</h3>
+                        <Badge variant="outline">
+                          {tasks.filter(t => t.status === 'active').length} ativas • {tasks.filter(t => t.status === 'expired').length} expiradas
+                        </Badge>
+                      </div>
+
+                      {tasks.length === 0 ? (
+                        <div className="text-center py-8 bg-gray-50 rounded-lg">
+                          <CheckSquare className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                          <p className="text-gray-600 mb-2">Nenhuma tarefa criada ainda</p>
+                          <Button 
+                            onClick={() => setTaskActiveTab('create')} 
+                            size="sm" 
+                            variant="outline"
+                          >
+                            Criar primeira tarefa
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <TaskSearch
+                            tasks={tasks}
+                            onFilterChange={setFilteredTasks}
+                          />
+                          
+                          <TaskOrganizer
+                            tasks={filteredTasks.length > 0 ? filteredTasks : tasks}
+                            renderTaskCard={(task) => (
+                              <Card key={task.id} className="p-4">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                                  <div className="flex-1">
+                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                      <h4 className="font-medium text-sm sm:text-base">{task.title}</h4>
+                                      <DifficultyBadge difficulty={task.difficulty || 'easy'} />
+                                      {task.category && <TaskCategoryBadge category={task.category} />}
+                                      {task.targetUnits && task.targetUnits.length > 0 && (
+                                        <Badge 
+                                          variant="secondary"
+                                          className="cursor-help text-xs"
+                                          title={`Direcionada para: ${task.targetUnits.map(unitId => units.find(u => u.id === unitId)?.name || 'Unidade não encontrada').join(', ')}`}
+                                        >
+                                          🎯 {task.targetUnits.length} unidade{task.targetUnits.length !== 1 ? 's' : ''}
+                                        </Badge>
+                                      )}
+                                      {(!task.targetUnits || task.targetUnits.length === 0) && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          🌐 Global
+                                        </Badge>
+                                      )}
+                                      <Badge 
+                                        variant={task.status === 'active' ? 'default' : 'destructive'}
+                                        className="text-xs"
+                                      >
+                                        {task.status === 'active' ? '✅ Ativa' : '❌ Expirada'}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-xs sm:text-sm text-gray-600 mb-2">{task.description}</p>
+                                    <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-gray-500">
+                                      <span className="flex items-center gap-1">
+                                        📅 {new Date(task.deadline).toLocaleDateString()}
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        ⭐ {task.points} pontos
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        📊 {submissions.filter(s => s.taskId === task.id).length} envios
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        ✅ {submissions.filter(s => s.taskId === task.id && s.status === 'completed').length} aprovados
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button 
+                                      onClick={() => confirmDeleteTask(task.id)} 
+                                      variant="destructive" 
+                                      size="sm"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Remover
+                                    </Button>
+                                  </div>
+                                </div>
+                              </Card>
+                            )}
+                            className="mt-4"
+                          />
                         </div>
                       )}
                     </div>
-                  </div>
+                  )}
 
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary"
-                    disabled={taskTargetMode === 'selected' && Object.values(selectedTaskUnits).filter(Boolean).length === 0}
-                  >
-                    {taskTargetMode === 'all' 
-                      ? 'Criar Tarefa (Todas as Unidades)' 
-                      : `Criar Tarefa (${Object.values(selectedTaskUnits).filter(Boolean).length} unidade${Object.values(selectedTaskUnits).filter(Boolean).length !== 1 ? 's' : ''})`
-                    }
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-            
-            {/* Existing Tasks List */}
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Tarefas Existentes</h3>
-              {tasks.length === 0 ? <div className="text-center py-6 bg-gray-50 rounded-lg">
-                  <p className="text-gray-600">Nenhuma tarefa criada ainda.</p>
-                </div> : <div className="space-y-3">
-                  {tasks.map(task => <Card key={task.id} className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <h4 className="font-medium text-sm sm:text-base">{task.title}</h4>
-                            <DifficultyBadge difficulty={task.difficulty || 'easy'} />
-                            {task.category && <TaskCategoryBadge category={task.category} />}
-                            {task.targetUnits && task.targetUnits.length > 0 && (
-                              <span 
-                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 cursor-help"
-                                title={`Direcionada para: ${task.targetUnits.map(unitId => units.find(u => u.id === unitId)?.name || 'Unidade não encontrada').join(', ')}`}
-                              >
-                                🎯 {task.targetUnits.length} unidade{task.targetUnits.length !== 1 ? 's' : ''}
-                              </span>
-                            )}
-                            {(!task.targetUnits || task.targetUnits.length === 0) && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                🌐 Todas
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs sm:text-sm text-gray-600 mb-2">{task.description}</p>
-                          <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-gray-500">
-                            <span>📅 {new Date(task.deadline).toLocaleDateString()}</span>
-                            <span>⭐ {task.points} pontos</span>
-                            <span className={task.status === 'active' ? 'text-green-600' : 'text-red-600'}>
-                              {task.status === 'active' ? '✅ Ativa' : '❌ Expirada'}
-                            </span>
-                          </div>
-                        </div>
-                        <Button onClick={() => confirmDeleteTask(task.id)} variant="destructive" size="sm" className="self-end sm:self-start">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                  {taskActiveTab === 'stats' && (
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-semibold">Estatísticas das Tarefas</h3>
+                      
+                      <TaskStats
+                        tasks={tasks}
+                        completedTasks={submissions.filter(s => s.status === 'completed').map(s => tasks.find(t => t.id === s.taskId)).filter(Boolean) as typeof tasks}
+                        pendingTasks={submissions.filter(s => s.status === 'pending').map(s => tasks.find(t => t.id === s.taskId)).filter(Boolean) as typeof tasks}
+                      />
+
+                      {/* Additional Admin Stats */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base">Tarefas por Status</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm">Ativas</span>
+                                <Badge variant="default">{tasks.filter(t => t.status === 'active').length}</Badge>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm">Expiradas</span>
+                                <Badge variant="secondary">{tasks.filter(t => t.status === 'expired').length}</Badge>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm">Total</span>
+                                <Badge variant="outline">{tasks.length}</Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base">Envios por Status</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm">Pendentes</span>
+                                <Badge variant="default">{submissions.filter(s => s.status === 'pending').length}</Badge>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm">Aprovados</span>
+                                <Badge variant="default" className="bg-green-500">{submissions.filter(s => s.status === 'completed').length}</Badge>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm">Rejeitados</span>
+                                <Badge variant="destructive">{submissions.filter(s => s.status === 'rejected').length}</Badge>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
-                    </Card>)}
-                </div>}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
           
