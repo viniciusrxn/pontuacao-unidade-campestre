@@ -5,14 +5,14 @@ import { motion } from 'framer-motion';
 import { useAppContext } from '../contexts/AppContext';
 import { Card, CardContent } from '@/components/ui/card';
 import Layout from '../components/Layout';
-import { Loader2 } from 'lucide-react';
+import { Loader2, BarChart3 } from 'lucide-react';
 import PodiumStep from '@/components/PodiumStep';
 import RankingItem from '@/components/RankingItem';
 import { useLeaderboardData } from '@/hooks/useLeaderboardData';
 import { usePositionTracker } from '@/hooks/usePositionTracker';
 
 const Index = () => {
-  const { units, currentUser, loading } = useAppContext();
+  const { units, currentUser, loading, rankingVisible } = useAppContext();
   
   const { sortedUnits, getRankWithTies } = useLeaderboardData(units);
   const { getPositionChange } = usePositionTracker(sortedUnits);
@@ -56,8 +56,8 @@ const Index = () => {
           </motion.div>
         ) : (
           <div className="space-y-8">
-            {/* 3D Podium for Top 3 */}
-            {sortedUnits.length > 0 && (
+            {/* 3D Podium for Top 3 - Conditional display */}
+            {rankingVisible && sortedUnits.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -96,42 +96,65 @@ const Index = () => {
               </motion.div>
             )}
 
-            {/* Complete Ranking List */}
-            <Card>
-              <CardContent className="p-3 md:p-4 lg:p-6">
-                <motion.h2 
-                  className="text-lg md:text-xl font-bold mb-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                >
-                  Classificação Completa
-                </motion.h2>
-                <motion.div 
-                  className="space-y-1 md:space-y-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1 }}
-                >
-                  {sortedUnits.map((unit, index) => {
-                    const position = getRankWithTies(index);
-                    const isCurrentUnit = currentUser?.type === 'unit' && currentUser.unitId === unit.id;
-                    const positionChange = getPositionChange(unit.id);
-                    
-                    return (
-                      <RankingItem
-                        key={unit.id}
-                        unit={unit}
-                        position={position}
-                        isCurrentUnit={isCurrentUnit}
-                        index={index}
-                        positionChange={positionChange}
-                      />
-                    );
-                  })}
-                </motion.div>
-              </CardContent>
-            </Card>
+            {/* Complete Ranking List - Conditional display */}
+            {rankingVisible ? (
+              <Card>
+                <CardContent className="p-3 md:p-4 lg:p-6">
+                  <motion.h2 
+                    className="text-lg md:text-xl font-bold mb-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    Classificação Completa
+                  </motion.h2>
+                  <motion.div 
+                    className="space-y-1 md:space-y-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1 }}
+                  >
+                    {sortedUnits.map((unit, index) => {
+                      const position = getRankWithTies(index);
+                      const isCurrentUnit = currentUser?.type === 'unit' && currentUser.unitId === unit.id;
+                      const positionChange = getPositionChange(unit.id);
+                      
+                      return (
+                        <RankingItem
+                          key={unit.id}
+                          unit={unit}
+                          position={position}
+                          isCurrentUnit={isCurrentUnit}
+                          index={index}
+                          positionChange={positionChange}
+                        />
+                      );
+                    })}
+                  </motion.div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-8 md:p-12 text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex flex-col items-center gap-6"
+                  >
+                    <BarChart3 className="w-20 h-20 md:w-24 md:h-24 text-gray-400" />
+                    <div className="space-y-2">
+                      <h3 className="text-xl md:text-2xl font-bold text-gray-700">
+                        Ranking Temporariamente Indisponível
+                      </h3>
+                      <p className="text-sm md:text-base text-gray-500 max-w-md mx-auto">
+                        O ranking geral está temporariamente oculto. Entre em contato com o administrador para mais informações.
+                      </p>
+                    </div>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            )}
             
             {/* Login Prompt for Non-authenticated Users */}
             {!currentUser && (

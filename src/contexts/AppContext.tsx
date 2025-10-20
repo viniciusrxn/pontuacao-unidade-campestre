@@ -40,6 +40,7 @@ interface AppContextType {
   attendances: WeeklyAttendance[];
   formSettings: FormSettings | null;
   attendanceFormEnabled: boolean;
+  rankingVisible: boolean;
   loading: boolean;
   setCurrentUser: (user: User | null) => void;
   login: (unitId: string, password: string, keepLoggedIn?: boolean) => Promise<boolean>;
@@ -54,6 +55,7 @@ interface AppContextType {
   submitWeeklyAttendance: (attendance: Omit<WeeklyAttendance, 'id' | 'submittedAt' | 'status'>) => Promise<boolean>;
   validateAttendance: (attendanceId: string, approved: boolean, customScore?: number) => Promise<void>;
   toggleAttendanceFormAvailability: (enabled: boolean, enabledUnits?: string[]) => Promise<boolean>;
+  toggleRankingVisibility: () => Promise<void>;
   resetAllStatistics: () => Promise<boolean>;
   fetchUnits: () => Promise<void>;
   isTaskAvailableForUnit: (task: Task, unitId: string) => boolean;
@@ -88,6 +90,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
     const [attendances, setAttendances] = useState<WeeklyAttendance[]>([]);
     const [formSettings, setFormSettings] = useState<FormSettings | null>(null);
+    const [rankingVisible, setRankingVisible] = useState(true);
     const [loading, setLoading] = useState(true);
 
     // Transform functions
@@ -254,6 +257,27 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         }
       } catch (error) {
         console.error('Error fetching form settings:', error);
+      }
+    };
+
+    const fetchRankingSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('form_settings')
+          .select('*')
+          .eq('form_type', 'ranking_visibility')
+          .single();
+        
+        if (error && error.code !== 'PGRST116') throw error;
+        
+        if (data) {
+          setRankingVisible(data.is_enabled);
+        } else {
+          setRankingVisible(true);
+        }
+      } catch (error) {
+        console.error('Error fetching ranking settings:', error);
+        setRankingVisible(true);
       }
     };
 
@@ -669,6 +693,31 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       }
     };
 
+    const toggleRankingVisibility = async (): Promise<void> => {
+      try {
+        const newVisibility = !rankingVisible;
+        
+        const { error } = await supabase
+          .from('form_settings')
+          .upsert({
+            form_type: 'ranking_visibility',
+            is_enabled: newVisibility,
+            enabled_units: [],
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'form_type'
+          });
+
+        if (error) throw error;
+        
+        setRankingVisible(newVisibility);
+        console.log('Ranking visibility updated:', newVisibility);
+      } catch (error) {
+        console.error('Error toggling ranking visibility:', error);
+        throw error;
+      }
+    };
+
     // Utility function to check if a task is available for a specific unit
     const isTaskAvailableForUnit = (task: Task, unitId: string): boolean => {
       // If targetUnits is null/undefined or empty, task is available for all units (global task)
@@ -875,7 +924,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
           fetchTasks(),
           fetchSubmissions(),
           fetchAttendances(),
-          fetchFormSettings()
+          fetchFormSettings(),
+          fetchRankingSettings()
         ]);
         
         setLoading(false);
@@ -894,6 +944,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       attendances,
       formSettings,
       attendanceFormEnabled,
+      rankingVisible,
       loading,
       setCurrentUser,
       login,
@@ -908,6 +959,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       submitWeeklyAttendance,
       validateAttendance,
       toggleAttendanceFormAvailability,
+      toggleRankingVisibility,
       resetAllStatistics,
       fetchUnits,
       isTaskAvailableForUnit,

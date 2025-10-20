@@ -39,6 +39,7 @@ const AdminDashboard = () => {
     attendances,
     formSettings,
     attendanceFormEnabled,
+    rankingVisible,
     createTask,
     deleteTask,
     validateTask,
@@ -46,6 +47,7 @@ const AdminDashboard = () => {
     updateUnitLogo,
     validateAttendance,
     toggleAttendanceFormAvailability,
+    toggleRankingVisibility,
     resetAllStatistics,
     fetchUnits
   } = useAppContext();
@@ -217,6 +219,26 @@ const AdminDashboard = () => {
         title: attendanceFormEnabled ? "Formulário desabilitado" : "Formulário habilitado",
         description: attendanceFormEnabled ? "As unidades não poderão mais enviar presenças." : formControlMode === 'all' ? "Todas as unidades agora podem enviar presenças." : "As unidades selecionadas agora podem enviar presenças.",
         variant: "default"
+      });
+    }
+  };
+
+  // Handle ranking visibility toggle
+  const handleToggleRankingVisibility = async () => {
+    try {
+      await toggleRankingVisibility();
+      toast({
+        title: rankingVisible ? "Ranking oculto" : "Ranking visível",
+        description: rankingVisible 
+          ? "O ranking geral agora está oculto para todas as unidades." 
+          : "O ranking geral agora está visível para todas as unidades.",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao alterar visibilidade",
+        description: "Não foi possível alterar a visibilidade do ranking. Tente novamente.",
+        variant: "destructive"
       });
     }
   };
@@ -1343,7 +1365,7 @@ const AdminDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="mb-6">
+                <div className="mb-6 space-y-4">
                   <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Settings className="h-5 w-5 text-gray-600" />
@@ -1356,6 +1378,21 @@ const AdminDashboard = () => {
                     </div>
                     <div>
                       <Switch checked={attendanceFormEnabled} onCheckedChange={() => handleToggleFormAvailability()} />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <BarChart3 className="h-5 w-5 text-gray-600" />
+                      <div>
+                        <h3 className="font-medium">Visibilidade do Ranking Geral</h3>
+                        <p className="text-sm text-gray-600">
+                          Status: {rankingVisible ? <span className="text-green-600 font-medium">Visível</span> : <span className="text-red-600 font-medium">Oculto</span>}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <Switch checked={rankingVisible} onCheckedChange={handleToggleRankingVisibility} />
                     </div>
                   </div>
                 </div>
