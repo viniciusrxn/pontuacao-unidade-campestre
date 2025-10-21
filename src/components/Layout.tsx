@@ -398,10 +398,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <div className="text-center md:text-right">
               <p className="text-sm text-gray-400">
-                © 2025 Pontuação Unidade - Desenvolvido por Vinicius
+                © 2025 Ranking Unidade - Desenvolvido por Vinicius
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Versão 1.0 - Progressive Web App
+                Versão V1.3
               </p>
             </div>
           </div>
