@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -71,7 +71,42 @@ export type Database = {
         }
         Relationships: []
       }
-
+      polls: {
+        Row: {
+          allow_multiple_votes: boolean
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          options: Json
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          allow_multiple_votes?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          options?: Json
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          allow_multiple_votes?: boolean
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          options?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       task_submissions: {
         Row: {
           id: string
@@ -124,7 +159,6 @@ export type Database = {
           id: string
           points: number
           status: string
-          target_units: string[] | null
           title: string
           updated_at: string
         }
@@ -137,7 +171,6 @@ export type Database = {
           id?: string
           points: number
           status?: string
-          target_units?: string[] | null
           title: string
           updated_at?: string
         }
@@ -150,7 +183,6 @@ export type Database = {
           id?: string
           points?: number
           status?: string
-          target_units?: string[] | null
           title?: string
           updated_at?: string
         }
@@ -283,44 +315,25 @@ export type Database = {
     }
     Functions: {
       authenticate_admin: {
-        Args: {
-          username_param: string
-          password_param: string
-        }
+        Args: { password_param: string; username_param: string }
         Returns: Json
       }
       authenticate_unit: {
-        Args: {
-          unit_name_param: string
-          password_param: string
-        }
+        Args: { password_param: string; unit_name_param: string }
         Returns: Json
       }
       create_new_unit: {
-        Args: {
-          name_param: string
-          password_param: string
-        }
+        Args: { name_param: string; password_param: string }
         Returns: string
       }
-      delete_unit: {
-        Args: {
-          unit_id_param: string
-        }
-        Returns: boolean
-      }
+      delete_unit: { Args: { unit_id_param: string }; Returns: boolean }
+      get_system_stats: { Args: never; Returns: Json }
       is_form_enabled_for_unit: {
-        Args: {
-          form_name: string
-          unit_id: string
-        }
+        Args: { form_name: string; unit_id_param: string }
         Returns: boolean
       }
       update_unit_password: {
-        Args: {
-          unit_id_param: string
-          new_password_param: string
-        }
+        Args: { new_password_param: string; unit_id_param: string }
         Returns: boolean
       }
     }
