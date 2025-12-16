@@ -236,7 +236,7 @@ const SystemHealthCheck: React.FC = () => {
                 Todas as funções estão operacionais. Você pode agora:
               </p>
               <ul className="text-green-700 text-sm mt-2 ml-4 space-y-1">
-                <li>• Fazer login como admin (admin / SecureAdmin123!)</li>
+                <li>• Fazer login como admin na página /admin-login</li>
                 <li>• Criar e gerenciar unidades</li>
                 <li>• Gerenciar tarefas e pontuações</li>
                 <li>• Acompanhar ranking em tempo real</li>

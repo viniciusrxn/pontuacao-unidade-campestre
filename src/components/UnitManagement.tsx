@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -122,17 +123,31 @@ const UnitManagement: React.FC<UnitManagementProps> = ({ units, onUnitsUpdate })
     setShowPasswords(prev => ({ ...prev, [unitId]: false }));
   };
 
-  // Verify admin password - using hardcoded admin password for now
-  const verifyAdminPassword = (password: string): boolean => {
-    // For now, we'll use a hardcoded admin password
-    // In a real app, this should be stored securely and checked against the database
-    const adminPassword = currentUser?.password || 'admin123'; // fallback password
-    return adminPassword === password;
+  // Verify admin password - using Supabase RPC function
+  const verifyAdminPassword = async (password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('authenticate_admin', {
+        username_param: 'admin',
+        password_param: password
+      });
+
+      if (error) {
+        console.error('Admin verification error:', error);
+        return false;
+      }
+
+      const response = data as unknown as { success: boolean };
+      return response.success;
+    } catch (error) {
+      console.error('Admin verification exception:', error);
+      return false;
+    }
   };
 
   // Handle admin password confirmation
   const handleAdminPasswordConfirm = async (password: string) => {
-    if (!verifyAdminPassword(password)) {
+    const isValid = await verifyAdminPassword(password);
+    if (!isValid) {
       toast({
         title: "Senha incorreta",
         description: "A senha do administrador está incorreta.",
