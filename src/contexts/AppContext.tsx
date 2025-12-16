@@ -334,23 +334,31 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     const adminLogin = async (password: string, keepLoggedIn: boolean = false): Promise<boolean> => {
       try {
-        // Use the new admin password
-        if (password === '@AdminCampestre') {
-          const user = { type: 'admin' as const, password };
+        // Use Supabase RPC function for secure authentication
+        const { data, error } = await supabase.rpc('authenticate_admin', {
+          username_param: 'admin',
+          password_param: password
+        });
+
+        if (error) {
+          console.error('Admin authentication error:', error);
+          return false;
+        }
+
+        const response = data as unknown as { success: boolean; admin_id?: string; message?: string };
+        
+        if (response.success) {
+          const user = { type: 'admin' as const };
           setCurrentUser(user);
-          
-          // Create session token
-          const sessionToken = `admin-${Date.now()}`;
           
           // Save admin session if requested
           if (keepLoggedIn) {
             saveAdminSession(user, keepLoggedIn);
           }
           
-          // Note: Session will be handled by the client interceptor
-          
           return true;
         }
+        
         return false;
       } catch (error) {
         console.error('Admin login error:', error);

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -146,15 +147,31 @@ const AdminDashboard = () => {
   // Get pending attendance records
   const pendingAttendances = attendances.filter(a => a.status === 'pending');
 
-  // Verify admin password - using the new admin password
-  const verifyAdminPassword = (password: string): boolean => {
-    // Updated admin password
-    return password === '@AdminCampestre';
+  // Verify admin password - using Supabase RPC function
+  const verifyAdminPassword = async (password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('authenticate_admin', {
+        username_param: 'admin',
+        password_param: password
+      });
+
+      if (error) {
+        console.error('Admin verification error:', error);
+        return false;
+      }
+
+      const response = data as unknown as { success: boolean };
+      return response.success;
+    } catch (error) {
+      console.error('Admin verification exception:', error);
+      return false;
+    }
   };
 
   // Handle admin password confirmation for reset
   const handleAdminPasswordConfirm = async (password: string) => {
-    if (!verifyAdminPassword(password)) {
+    const isValid = await verifyAdminPassword(password);
+    if (!isValid) {
       toast({
         title: "Senha incorreta",
         description: "A senha do administrador está incorreta.",
