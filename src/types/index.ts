@@ -33,6 +33,7 @@ export interface TaskSubmission {
   proof: string;
   submittedAt: string;
   status: 'pending' | 'completed' | 'rejected';
+  adminFeedback?: string;
 }
 
 export interface WeeklyAttendance {
@@ -49,6 +50,7 @@ export interface WeeklyAttendance {
   submittedAt: string;
   status: 'pending' | 'validated' | 'rejected';
   score: number;
+  adminFeedback?: string;
 }
 
 export interface FormSettings {
@@ -116,6 +118,7 @@ export interface SupabaseTaskSubmission {
   proof: string;
   submitted_at: string;
   status: string;
+  admin_feedback?: string;
 }
 
 export interface SupabaseWeeklyAttendance {
@@ -132,6 +135,7 @@ export interface SupabaseWeeklyAttendance {
   submitted_at: string;
   status: string;
   score: number;
+  admin_feedback?: string;
 }
 
 export interface SupabaseNewsItem {

@@ -1,25 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  User,
-  Unit, 
-  Task, 
-  TaskSubmission, 
-  WeeklyAttendance, 
-  FormSettings,
-  SupabaseUnit,
-  SupabaseTask,
-  SupabaseTaskSubmission,
-  SupabaseWeeklyAttendance
+import {
+  User, Unit, Task, TaskSubmission, WeeklyAttendance, FormSettings,
+  SupabaseUnit, SupabaseTask, SupabaseTaskSubmission, SupabaseWeeklyAttendance
 } from '@/types';
+import { SESSION_DURATION_MS, ARCHIVE_DEADLINE } from '@/constants';
 
 interface SavedSession {
   user: User;
-  unitData: {
-    id: string;
-    name: string;
-    logo?: string;
-  };
+  unitData: { id: string; name: string; logo?: string };
   timestamp: number;
   expiresAt: number;
   keepLoggedIn: boolean;
@@ -49,22 +38,18 @@ interface AppContextType {
   createTask: (task: Omit<Task, 'id' | 'createdAt' | 'status'>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   submitTask: (taskId: string, proof: string) => Promise<void>;
-  validateTask: (submissionId: string, approved: boolean) => Promise<void>;
+  validateTask: (submissionId: string, approved: boolean, feedback?: string) => Promise<void>;
   updateUnitScore: (unitId: string, newScore: number) => Promise<void>;
   updateUnitLogo: (unitId: string, newLogo: string) => Promise<void>;
   submitWeeklyAttendance: (attendance: Omit<WeeklyAttendance, 'id' | 'submittedAt' | 'status'>) => Promise<boolean>;
-  validateAttendance: (attendanceId: string, approved: boolean, customScore?: number) => Promise<void>;
+  validateAttendance: (attendanceId: string, approved: boolean, customScore?: number, feedback?: string) => Promise<void>;
   toggleAttendanceFormAvailability: (enabled: boolean, enabledUnits?: string[]) => Promise<boolean>;
   toggleRankingVisibility: () => Promise<void>;
   resetAllStatistics: () => Promise<boolean>;
   fetchUnits: () => Promise<void>;
   isTaskAvailableForUnit: (task: Task, unitId: string) => boolean;
   getTasksForUnit: (unitId: string) => Task[];
-  getTasksWithHistoryForUnit: (unitId: string) => Promise<{
-    available: Task[];
-    completed: Task[];
-    pending: Task[];
-  }>;
+  getTasksWithHistoryForUnit: (unitId: string) => Promise<{ available: Task[]; completed: Task[]; pending: Task[] }>;
   isFormEnabledForUnit: (unitId: string) => boolean;
 }
 
@@ -78,919 +63,512 @@ export const useAppContext = () => {
   return context;
 };
 
-interface AppProviderProps {
-  children: ReactNode;
-}
+const transformUnit = (unit: SupabaseUnit): Unit => ({
+  id: unit.id,
+  name: unit.name,
+  logo: unit.logo || undefined,
+  password: '',
+  score: unit.score,
+  tasks: []
+});
 
-export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  try {
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [units, setUnits] = useState<Unit[]>([]);
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
-    const [attendances, setAttendances] = useState<WeeklyAttendance[]>([]);
-    const [formSettings, setFormSettings] = useState<FormSettings | null>(null);
-    const [rankingVisible, setRankingVisible] = useState(true);
-    const [loading, setLoading] = useState(true);
+const transformTask = (task: SupabaseTask): Task => ({
+  id: task.id,
+  title: task.title,
+  description: task.description || '',
+  points: task.points,
+  deadline: task.deadline,
+  status: task.status as 'active' | 'expired' | 'removed',
+  createdAt: task.created_at,
+  difficulty: (task.difficulty as 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary') || 'easy',
+  category: task.category || 'geral',
+  targetUnits: task.target_units
+});
 
-    // Transform functions
-    const transformUnit = (unit: SupabaseUnit): Unit => ({
-      id: unit.id,
-      name: unit.name,
-      logo: unit.logo || undefined,
-      password: unit.password,
-      score: unit.score,
-      tasks: [] // Will be populated based on submissions
-    });
+const transformSubmission = (submission: SupabaseTaskSubmission): TaskSubmission => ({
+  id: submission.id,
+  taskId: submission.task_id,
+  unitId: submission.unit_id,
+  proof: submission.proof,
+  submittedAt: submission.submitted_at,
+  status: submission.status as 'pending' | 'completed' | 'rejected',
+  adminFeedback: (submission as any).admin_feedback || undefined
+});
 
-    // Helper function to get task targeting from localStorage
-    const getTaskTargeting = (taskId: string): string[] | null => {
-      try {
-        const taskTargeting = JSON.parse(localStorage.getItem('taskTargeting') || '{}');
-        return taskTargeting[taskId] || null;
-      } catch (error) {
-        console.error('Error getting task targeting:', error);
-        return null;
+const transformAttendance = (attendance: SupabaseWeeklyAttendance): WeeklyAttendance => ({
+  id: attendance.id,
+  unitId: attendance.unit_id,
+  date: attendance.date,
+  presentMembers: attendance.present_members || [],
+  punctualCount: attendance.punctual_count,
+  neckerchiefCount: attendance.neckerchief_count,
+  uniformCount: attendance.uniform_count,
+  broughtFlag: attendance.brought_flag,
+  broughtBible: attendance.brought_bible,
+  photoUrl: attendance.photo_url || undefined,
+  submittedAt: attendance.submitted_at,
+  status: attendance.status as 'pending' | 'validated' | 'rejected',
+  score: attendance.score,
+  adminFeedback: (attendance as any).admin_feedback || undefined
+});
+
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [submissions, setSubmissions] = useState<TaskSubmission[]>([]);
+  const [attendances, setAttendances] = useState<WeeklyAttendance[]>([]);
+  const [formSettings, setFormSettings] = useState<FormSettings | null>(null);
+  const [rankingVisible, setRankingVisible] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  const isFormEnabledForUnit = useCallback((unitId: string): boolean => {
+    if (!formSettings || !formSettings.isEnabled) return false;
+    if (!formSettings.enabledUnits || formSettings.enabledUnits.length === 0) return true;
+    return formSettings.enabledUnits.includes(unitId);
+  }, [formSettings]);
+
+  const fetchUnits = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('units').select('*');
+      if (error) throw error;
+      setUnits((data || []).map(transformUnit));
+    } catch (error) {
+      console.error('Error fetching units:', error);
+    }
+  }, []);
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('tasks').select('*').not('deadline', 'eq', ARCHIVE_DEADLINE);
+      if (error) throw error;
+      setTasks((data || []).map(transformTask));
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  }, []);
+
+  const fetchSubmissions = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('task_submissions').select('*');
+      if (error) throw error;
+      setSubmissions((data || []).map(transformSubmission));
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+    }
+  }, []);
+
+  const fetchAttendances = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.from('weekly_attendances').select('*');
+      if (error) throw error;
+      setAttendances((data || []).map(transformAttendance));
+    } catch (error) {
+      console.error('Error fetching attendances:', error);
+    }
+  }, []);
+
+  const fetchFormSettings = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('form_settings').select('*').eq('form_type', 'weekly_attendance').maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setFormSettings({
+          id: data.id, formType: data.form_type, isEnabled: data.is_enabled,
+          enabledUnits: data.enabled_units || [], updatedAt: data.updated_at
+        });
+      } else {
+        setFormSettings({ id: '', formType: 'weekly_attendance', isEnabled: false, enabledUnits: [], updatedAt: new Date().toISOString() });
       }
-    };
+    } catch (error) {
+      console.error('Error fetching form settings:', error);
+    }
+  }, []);
 
-    const transformTask = (task: SupabaseTask): Task => {
-      // Get targeting from database or localStorage fallback
-      let targetUnits = task.target_units;
-      if (!targetUnits) {
-        const storedTargeting = getTaskTargeting(task.id);
-        targetUnits = storedTargeting;
-      }
+  const fetchRankingSettings = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('form_settings').select('*').eq('form_type', 'ranking_visibility').maybeSingle();
+      if (error) throw error;
+      setRankingVisible(data ? data.is_enabled : true);
+    } catch (error) {
+      console.error('Error fetching ranking settings:', error);
+      setRankingVisible(true);
+    }
+  }, []);
 
-      return {
-        id: task.id,
-        title: task.title,
-        description: task.description || '',
-        points: task.points,
-        deadline: task.deadline,
-        status: task.status as 'active' | 'expired' | 'removed',
-        createdAt: task.created_at,
-        difficulty: (task.difficulty as 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary') || 'easy',
-        category: task.category || 'geral',
-        targetUnits: targetUnits
-      };
-    };
+  const login = useCallback(async (unitId: string, password: string, keepLoggedIn: boolean = false): Promise<boolean> => {
+    try {
+      const unit = units.find(u => u.id === unitId);
+      if (!unit) return false;
 
-    const transformSubmission = (submission: SupabaseTaskSubmission): TaskSubmission => ({
-      id: submission.id,
-      taskId: submission.task_id,
-      unitId: submission.unit_id,
-      proof: submission.proof,
-      submittedAt: submission.submitted_at,
-      status: submission.status as 'pending' | 'completed' | 'rejected'
-    });
+      const { data, error } = await supabase.rpc('authenticate_unit', {
+        unit_name_param: unit.name,
+        password_param: password
+      });
 
-    const transformAttendance = (attendance: SupabaseWeeklyAttendance): WeeklyAttendance => ({
-      id: attendance.id,
-      unitId: attendance.unit_id,
-      date: attendance.date,
-      presentMembers: attendance.present_members || [],
-      punctualCount: attendance.punctual_count,
-      neckerchiefCount: attendance.neckerchief_count,
-      uniformCount: attendance.uniform_count,
-      broughtFlag: attendance.brought_flag,
-      broughtBible: attendance.brought_bible,
-      photoUrl: attendance.photo_url || undefined,
-      submittedAt: attendance.submitted_at,
-      status: attendance.status as 'pending' | 'validated' | 'rejected',
-      score: attendance.score
-    });
-
-    // Check if form is enabled for a specific unit
-    const isFormEnabledForUnit = (unitId: string): boolean => {
-      if (!formSettings || !formSettings.isEnabled) {
+      if (error) {
+        console.error('Unit auth error:', error);
         return false;
       }
-      
-      // If enabledUnits is empty or null, form is enabled for all units
-      if (!formSettings.enabledUnits || formSettings.enabledUnits.length === 0) {
-        return true;
-      }
-      
-      // Check if this unit is in the enabled list
-      return formSettings.enabledUnits.includes(unitId);
-    };
 
-    // Fetch functions
-    const fetchUnits = async () => {
-      try {
-        const client = supabase;
-        const { data, error } = await client.from('units').select('*');
-        if (error) throw error;
-        const transformedUnits = (data || []).map(transformUnit);
-        setUnits(transformedUnits);
-      } catch (error) {
-        console.error('Error fetching units:', error);
-      }
-    };
+      const response = data as unknown as { success: boolean; unit_id?: string; unit_name?: string; unit_score?: number };
+      if (!response.success) return false;
 
-    const fetchTasks = async () => {
-      try {
-        const client = supabase;
-        
-        // Buscar tarefas excluindo as que foram "arquivadas" (marcadas como expiradas com deadline antigo)
-        const { data, error } = await client
-          .from('tasks')
-          .select('*')
-          .not('deadline', 'eq', '1900-01-01T00:00:00.000Z');
-        
-        if (error) throw error;
-        const transformedTasks = (data || []).map(transformTask);
-        setTasks(transformedTasks);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-      }
-    };
+      const user = { type: 'unit' as const, unitId: unit.id };
+      setCurrentUser(user);
 
-    const fetchSubmissions = async () => {
-      try {
-        const { data, error } = await supabase.from('task_submissions').select('*');
-        if (error) throw error;
-        setSubmissions((data || []).map(transformSubmission));
-      } catch (error) {
-        console.error('Error fetching submissions:', error);
-      }
-    };
-
-    const fetchAttendances = async () => {
-      try {
-        const { data, error } = await supabase.from('weekly_attendances').select('*');
-        if (error) throw error;
-        setAttendances((data || []).map(transformAttendance));
-      } catch (error) {
-        console.error('Error fetching attendances:', error);
-      }
-    };
-
-    const fetchFormSettings = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('form_settings')
-          .select('*')
-          .eq('form_type', 'weekly_attendance')
-          .single();
-        
-        if (error && error.code !== 'PGRST116') throw error;
-        
-        if (data) {
-          const settings = {
-            id: data.id,
-            formType: data.form_type,
-            isEnabled: data.is_enabled,
-            enabledUnits: data.enabled_units || [],
-            updatedAt: data.updated_at
-          };
-          setFormSettings(settings);
-        } else {
-          setFormSettings({
-            id: '',
-            formType: 'weekly_attendance',
-            isEnabled: false,
-            enabledUnits: [],
-            updatedAt: new Date().toISOString()
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching form settings:', error);
-      }
-    };
-
-    const fetchRankingSettings = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('form_settings')
-          .select('*')
-          .eq('form_type', 'ranking_visibility')
-          .single();
-        
-        if (error && error.code !== 'PGRST116') throw error;
-        
-        if (data) {
-          setRankingVisible(data.is_enabled);
-        } else {
-          setRankingVisible(true);
-        }
-      } catch (error) {
-        console.error('Error fetching ranking settings:', error);
-        setRankingVisible(true);
-      }
-    };
-
-    const saveSession = (user: User, unit: Unit, keepLoggedIn: boolean) => {
       if (keepLoggedIn) {
         const session: SavedSession = {
-          user,
-          unitData: { id: unit.id, name: unit.name, logo: unit.logo },
-          timestamp: Date.now(),
-          expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
-          keepLoggedIn: true
+          user, unitData: { id: unit.id, name: unit.name, logo: unit.logo },
+          timestamp: Date.now(), expiresAt: Date.now() + SESSION_DURATION_MS, keepLoggedIn: true
         };
         localStorage.setItem('authSession', JSON.stringify(session));
       }
-    };
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
+  }, [units]);
 
-    const login = async (unitId: string, password: string, keepLoggedIn: boolean = false): Promise<boolean> => {
-      try {
-        const unit = units.find(u => u.id === unitId && u.password === password);
-        if (unit) {
-          const user = { type: 'unit' as const, unitId: unit.id };
-          setCurrentUser(user);
-          
-          // Create session token
-          const sessionToken = `unit-${unit.id}-${Date.now()}`;
-          
-          // Save session in localStorage if requested
-          if (keepLoggedIn) {
-            saveSession(user, unit, keepLoggedIn);
-          }
-          
-          // Note: Session will be handled by the client interceptor
-          
-          return true;
-        }
-        return false;
-      } catch (error) {
-        console.error('Login error:', error);
+  const adminLogin = useCallback(async (password: string, keepLoggedIn: boolean = false): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('authenticate_admin', {
+        username_param: 'admin', password_param: password
+      });
+      if (error) {
+        console.error('Admin auth error:', error);
         return false;
       }
-    };
+      const response = data as unknown as { success: boolean };
+      if (!response.success) return false;
 
-    const saveAdminSession = (user: User, keepLoggedIn: boolean) => {
+      const user = { type: 'admin' as const };
+      setCurrentUser(user);
+
       if (keepLoggedIn) {
         const session: SavedAdminSession = {
-          user,
-          timestamp: Date.now(),
-          expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
-          keepLoggedIn: true
+          user, timestamp: Date.now(), expiresAt: Date.now() + SESSION_DURATION_MS, keepLoggedIn: true
         };
         localStorage.setItem('adminAuthSession', JSON.stringify(session));
       }
-    };
+      return true;
+    } catch (error) {
+      console.error('Admin login error:', error);
+      return false;
+    }
+  }, []);
 
-    const adminLogin = async (password: string, keepLoggedIn: boolean = false): Promise<boolean> => {
-      try {
-        // Use Supabase RPC function for secure authentication
-        const { data, error } = await supabase.rpc('authenticate_admin', {
-          username_param: 'admin',
-          password_param: password
-        });
+  const logout = useCallback(() => {
+    setCurrentUser(null);
+    localStorage.removeItem('authSession');
+    localStorage.removeItem('adminAuthSession');
+  }, []);
 
-        if (error) {
-          console.error('Admin authentication error:', error);
-          return false;
+  const createTask = useCallback(async (taskData: {
+    title: string; description: string; points: number; deadline: string;
+    difficulty?: string; category?: string; targetUnits?: string[];
+  }): Promise<void> => {
+    try {
+      const { error } = await supabase.from('tasks').insert([{
+        title: taskData.title, description: taskData.description,
+        points: taskData.points, deadline: taskData.deadline,
+        difficulty: taskData.difficulty || 'easy', category: taskData.category || 'geral',
+        target_units: taskData.targetUnits || null, status: 'active'
+      }]).select();
+      if (error) throw error;
+      await fetchTasks();
+    } catch (error) {
+      console.error('Error creating task:', error);
+      throw error;
+    }
+  }, [fetchTasks]);
+
+  const deleteTask = useCallback(async (taskId: string) => {
+    try {
+      const { data: completedSubmissions, error: subErr } = await supabase
+        .from('task_submissions').select('*').eq('task_id', taskId).eq('status', 'completed');
+      if (subErr) throw subErr;
+
+      if (completedSubmissions && completedSubmissions.length > 0) {
+        const { error } = await supabase.from('tasks')
+          .update({ status: 'expired', updated_at: new Date().toISOString(), deadline: ARCHIVE_DEADLINE })
+          .eq('id', taskId);
+        if (error) throw error;
+      } else {
+        await supabase.from('task_submissions').delete().eq('task_id', taskId);
+        const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+        if (error) throw error;
+      }
+      await fetchTasks();
+      await fetchSubmissions();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      throw error;
+    }
+  }, [fetchTasks, fetchSubmissions]);
+
+  const submitTask = useCallback(async (taskId: string, proof: string) => {
+    if (!currentUser || currentUser.type !== 'unit') return;
+    try {
+      const { error } = await supabase.from('task_submissions').insert({
+        task_id: taskId, unit_id: currentUser.unitId, proof, status: 'pending'
+      });
+      if (error) throw error;
+      await fetchSubmissions();
+    } catch (error) {
+      console.error('Error submitting task:', error);
+      throw error;
+    }
+  }, [currentUser, fetchSubmissions]);
+
+  const validateTask = useCallback(async (submissionId: string, approved: boolean, feedback?: string) => {
+    try {
+      const submission = submissions.find(s => s.id === submissionId);
+      if (!submission) return;
+
+      const updateData: Record<string, unknown> = { status: approved ? 'completed' : 'rejected' };
+      if (feedback !== undefined) updateData.admin_feedback = feedback;
+
+      const { error } = await supabase.from('task_submissions').update(updateData).eq('id', submissionId);
+      if (error) throw error;
+
+      if (approved) {
+        const task = tasks.find(t => t.id === submission.taskId);
+        const unit = units.find(u => u.id === submission.unitId);
+        if (task && unit) {
+          await supabase.from('units').update({ score: unit.score + task.points }).eq('id', unit.id);
+          await fetchUnits();
         }
+      }
+      await fetchSubmissions();
+    } catch (error) {
+      console.error('Error validating task:', error);
+      throw error;
+    }
+  }, [submissions, tasks, units, fetchSubmissions, fetchUnits]);
 
-        const response = data as unknown as { success: boolean; admin_id?: string; message?: string };
-        
-        if (response.success) {
-          const user = { type: 'admin' as const };
-          setCurrentUser(user);
-          
-          // Save admin session if requested
-          if (keepLoggedIn) {
-            saveAdminSession(user, keepLoggedIn);
+  const updateUnitScore = useCallback(async (unitId: string, newScore: number) => {
+    try {
+      const { error } = await supabase.from('units').update({ score: newScore }).eq('id', unitId);
+      if (error) throw error;
+      setUnits(prev => prev.map(u => u.id === unitId ? { ...u, score: newScore } : u));
+      await fetchUnits();
+    } catch (error) {
+      console.error('Error updating score:', error);
+      throw error;
+    }
+  }, [fetchUnits]);
+
+  const updateUnitLogo = useCallback(async (unitId: string, newLogo: string) => {
+    try {
+      const { error } = await supabase.from('units').update({ logo: newLogo || null }).eq('id', unitId);
+      if (error) throw error;
+      await fetchUnits();
+    } catch (error) {
+      console.error('Error updating logo:', error);
+      throw error;
+    }
+  }, [fetchUnits]);
+
+  const submitWeeklyAttendance = useCallback(async (attendanceData: Omit<WeeklyAttendance, 'id' | 'submittedAt' | 'status'>): Promise<boolean> => {
+    try {
+      const { error } = await supabase.from('weekly_attendances').insert({
+        unit_id: attendanceData.unitId, date: attendanceData.date,
+        present_members: attendanceData.presentMembers, punctual_count: attendanceData.punctualCount,
+        neckerchief_count: attendanceData.neckerchiefCount, uniform_count: attendanceData.uniformCount,
+        brought_flag: attendanceData.broughtFlag, brought_bible: attendanceData.broughtBible,
+        photo_url: attendanceData.photoUrl, score: attendanceData.score, status: 'pending'
+      });
+      if (error) throw error;
+      await fetchAttendances();
+      return true;
+    } catch (error) {
+      console.error('Error submitting attendance:', error);
+      return false;
+    }
+  }, [fetchAttendances]);
+
+  const validateAttendance = useCallback(async (attendanceId: string, approved: boolean, customScore?: number, feedback?: string) => {
+    try {
+      const attendance = attendances.find(a => a.id === attendanceId);
+      if (!attendance) return;
+      const finalScore = customScore !== undefined ? customScore : attendance.score;
+
+      const updateData: Record<string, unknown> = { status: approved ? 'validated' : 'rejected', score: finalScore };
+      if (feedback !== undefined) updateData.admin_feedback = feedback;
+
+      const { error } = await supabase.from('weekly_attendances').update(updateData).eq('id', attendanceId);
+      if (error) throw error;
+
+      if (approved) {
+        const unit = units.find(u => u.id === attendance.unitId);
+        if (unit) {
+          await supabase.from('units').update({ score: unit.score + finalScore }).eq('id', unit.id);
+          await fetchUnits();
+        }
+      }
+      await fetchAttendances();
+    } catch (error) {
+      console.error('Error validating attendance:', error);
+      throw error;
+    }
+  }, [attendances, units, fetchAttendances, fetchUnits]);
+
+  const toggleAttendanceFormAvailability = useCallback(async (enabled: boolean, enabledUnits: string[] = []): Promise<boolean> => {
+    try {
+      const { error } = await supabase.from('form_settings').upsert({
+        form_type: 'weekly_attendance', is_enabled: enabled,
+        enabled_units: enabledUnits.length > 0 ? enabledUnits : [],
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'form_type' }).select();
+      if (error) throw error;
+      await fetchFormSettings();
+      return true;
+    } catch (error) {
+      console.error('Error toggling form:', error);
+      return false;
+    }
+  }, [fetchFormSettings]);
+
+  const toggleRankingVisibility = useCallback(async (): Promise<void> => {
+    try {
+      const newVisibility = !rankingVisible;
+      const { error } = await supabase.from('form_settings').upsert({
+        form_type: 'ranking_visibility', is_enabled: newVisibility,
+        enabled_units: [], updated_at: new Date().toISOString()
+      }, { onConflict: 'form_type' });
+      if (error) throw error;
+      setRankingVisible(newVisibility);
+    } catch (error) {
+      console.error('Error toggling ranking:', error);
+      throw error;
+    }
+  }, [rankingVisible]);
+
+  const isTaskAvailableForUnit = useCallback((task: Task, unitId: string): boolean => {
+    if (!task.targetUnits || task.targetUnits.length === 0) return true;
+    return task.targetUnits.includes(unitId);
+  }, []);
+
+  const getTasksForUnit = useCallback((unitId: string): Task[] => {
+    return tasks.filter(task => isTaskAvailableForUnit(task, unitId));
+  }, [tasks, isTaskAvailableForUnit]);
+
+  const getTasksWithHistoryForUnit = useCallback(async (unitId: string) => {
+    try {
+      const unitSubmissions = submissions.filter(sub => sub.unitId === unitId);
+      const completedIds = new Set(unitSubmissions.filter(s => s.status === 'completed').map(s => s.taskId));
+      const pendingIds = new Set(unitSubmissions.filter(s => s.status === 'pending').map(s => s.taskId));
+
+      const { data: normalTasks, error } = await supabase.from('tasks').select('*').not('deadline', 'eq', ARCHIVE_DEADLINE);
+      if (error) throw error;
+
+      let archivedTasks: any[] = [];
+      if (completedIds.size > 0) {
+        const { data } = await supabase.from('tasks').select('*')
+          .eq('deadline', ARCHIVE_DEADLINE).in('id', Array.from(completedIds));
+        archivedTasks = data || [];
+      }
+
+      const allTasks = [...(normalTasks || []), ...archivedTasks].map(transformTask);
+
+      return {
+        available: allTasks.filter(t => t.deadline !== ARCHIVE_DEADLINE && isTaskAvailableForUnit(t, unitId) && !completedIds.has(t.id) && !pendingIds.has(t.id)),
+        completed: allTasks.filter(t => completedIds.has(t.id)),
+        pending: allTasks.filter(t => t.deadline !== ARCHIVE_DEADLINE && pendingIds.has(t.id))
+      };
+    } catch (error) {
+      console.error('Error fetching tasks with history:', error);
+      const available = getTasksForUnit(unitId);
+      const unitSubs = submissions.filter(s => s.unitId === unitId);
+      const cIds = new Set(unitSubs.filter(s => s.status === 'completed').map(s => s.taskId));
+      const pIds = new Set(unitSubs.filter(s => s.status === 'pending').map(s => s.taskId));
+      return {
+        available: available.filter(t => !cIds.has(t.id) && !pIds.has(t.id)),
+        completed: available.filter(t => cIds.has(t.id)),
+        pending: available.filter(t => pIds.has(t.id))
+      };
+    }
+  }, [submissions, isTaskAvailableForUnit, getTasksForUnit]);
+
+  const resetAllStatistics = useCallback(async (): Promise<boolean> => {
+    try {
+      await supabase.from('task_submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('weekly_attendances').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('units').update({ score: 0 }).neq('id', '00000000-0000-0000-0000-000000000000');
+      await Promise.all([fetchUnits(), fetchTasks(), fetchSubmissions(), fetchAttendances()]);
+      return true;
+    } catch (error) {
+      console.error('Error resetting statistics:', error);
+      return false;
+    }
+  }, [fetchUnits, fetchTasks, fetchSubmissions, fetchAttendances]);
+
+  useEffect(() => {
+    const initializeData = async () => {
+      setLoading(true);
+
+      try {
+        const adminSaved = localStorage.getItem('adminAuthSession');
+        if (adminSaved) {
+          const session: SavedAdminSession = JSON.parse(adminSaved);
+          if (Date.now() < session.expiresAt) {
+            setCurrentUser(session.user);
+          } else {
+            localStorage.removeItem('adminAuthSession');
           }
-          
-          return true;
-        }
-        
-        return false;
-      } catch (error) {
-        console.error('Admin login error:', error);
-        return false;
-      }
-    };
-
-    const logout = async () => {
-      // Get current session token before clearing
-      const adminSession = localStorage.getItem('adminAuthSession');
-      const unitSession = localStorage.getItem('authSession');
-      
-      let sessionToken = '';
-      if (adminSession) {
-        try {
-          const parsed = JSON.parse(adminSession);
-          sessionToken = `admin-${parsed.timestamp}`;
-        } catch (e) {
-          console.error('Error parsing admin session:', e);
-        }
-      } else if (unitSession) {
-        try {
-          const parsed = JSON.parse(unitSession);
-          sessionToken = `unit-${parsed.user.unitId}-${parsed.timestamp}`;
-        } catch (e) {
-          console.error('Error parsing unit session:', e);
-        }
-      }
-      
-      // Note: Sessions are managed in localStorage only for now
-      
-      setCurrentUser(null);
-      localStorage.removeItem('authSession'); // Always clear saved unit session
-      localStorage.removeItem('adminAuthSession'); // Always clear saved admin session
-    };
-
-    const createTask = async (taskData: {
-      title: string;
-      description: string;
-      points: number;
-      deadline: string;
-      difficulty?: string;
-      category?: string;
-      targetUnits?: string[];
-    }): Promise<void> => {
-      try {
-        console.log('Creating task with data:', taskData);
-        const client = supabase;
-        // Try to insert with target_units field, fallback if column doesn't exist
-        let taskToInsert = {
-          title: taskData.title,
-          description: taskData.description,
-          points: taskData.points,
-          deadline: taskData.deadline,
-          difficulty: taskData.difficulty || 'easy',
-          category: taskData.category || 'geral',
-          status: 'active'
-        };
-
-        // First attempt: try with target_units field
-        let { data, error } = await client
-          .from('tasks')
-          .insert([{
-            ...taskToInsert,
-            target_units: taskData.targetUnits || null
-          }])
-          .select();
-
-        // If error suggests column doesn't exist, retry without target_units
-        if (error && (error.message.includes('target_units') || error.code === '42703')) {
-          console.log('target_units column not found, retrying without it...');
-          const result = await client
-            .from('tasks')
-            .insert([taskToInsert])
-            .select();
-          
-          data = result.data;
-          error = result.error;
-        }
-
-        if (error) {
-          console.error('Error creating task:', error);
-          throw error;
-        }
-
-        console.log('Task created successfully:', data);
-        
-        // If target_units field doesn't exist and we have targetUnits, store them separately
-        if (taskData.targetUnits && data && data[0]) {
-          const taskId = data[0].id;
-          await storeTaskTargeting(taskId, taskData.targetUnits);
-        }
-        
-        // Refresh tasks to show the new task
-        await fetchTasks();
-      } catch (error) {
-        console.error('Error in createTask:', error);
-        throw error;
-      }
-    };
-
-    const deleteTask = async (taskId: string) => {
-      try {
-        console.log('Attempting to delete task:', taskId);
-        
-        // Verificar se há submissões aprovadas para esta tarefa
-        const { data: completedSubmissions, error: submissionError } = await supabase
-          .from('task_submissions')
-          .select('*')
-          .eq('task_id', taskId)
-          .eq('status', 'completed');
-
-        if (submissionError) {
-          console.error('Error checking submissions:', submissionError);
-          throw submissionError;
-        }
-
-        console.log('Found completed submissions:', completedSubmissions?.length || 0);
-
-        if (completedSubmissions && completedSubmissions.length > 0) {
-          // Se há submissões aprovadas, marcar como expirada em vez de deletar
-          // Isso preserva o histórico sem precisar da migration
-          console.log('Marking task as expired to preserve history...');
-          const { error: updateError } = await supabase
-            .from('tasks')
-            .update({ 
-              status: 'expired',
-              updated_at: new Date().toISOString(),
-              // Adicionar um timestamp muito antigo para que não apareça em listas normais
-              deadline: '1900-01-01T00:00:00.000Z'
-            })
-            .eq('id', taskId);
-
-          if (updateError) {
-            console.error('Error updating task status to expired:', updateError);
-            throw updateError;
-          }
-          
-          console.log(`Tarefa marcada como expirada para preservar histórico (tinha ${completedSubmissions.length} submissões aprovadas)`);
         } else {
-          // Se não há submissões aprovadas, deletar normalmente
-          console.log('Deleting task completely (no completed submissions)...');
-          await supabase.from('task_submissions').delete().eq('task_id', taskId);
-          const { error: deleteError } = await supabase.from('tasks').delete().eq('id', taskId);
-          if (deleteError) {
-            console.error('Error deleting task:', deleteError);
-            throw deleteError;
-          }
-          console.log('Tarefa deletada (sem submissões aprovadas)');
-        }
-        
-        await fetchTasks();
-        await fetchSubmissions();
-        console.log('Task deletion completed successfully');
-      } catch (error) {
-        console.error('Error in deleteTask function:', error);
-        throw error;
-      }
-    };
-
-    const submitTask = async (taskId: string, proof: string) => {
-      if (!currentUser || currentUser.type !== 'unit') return;
-
-      try {
-        const { error } = await supabase
-          .from('task_submissions')
-          .insert({
-            task_id: taskId,
-            unit_id: currentUser.unitId,
-            proof,
-            status: 'pending'
-          });
-
-        if (error) throw error;
-        await fetchSubmissions();
-      } catch (error) {
-        console.error('Error submitting task:', error);
-        throw error;
-      }
-    };
-
-    const validateTask = async (submissionId: string, approved: boolean) => {
-      try {
-        const submission = submissions.find(s => s.id === submissionId);
-        if (!submission) return;
-
-        // Update submission status
-        const { error: submissionError } = await supabase
-          .from('task_submissions')
-          .update({ status: approved ? 'completed' : 'rejected' })
-          .eq('id', submissionId);
-
-        if (submissionError) throw submissionError;
-
-        // If approved, update unit score
-        if (approved) {
-          const task = tasks.find(t => t.id === submission.taskId);
-          const unit = units.find(u => u.id === submission.unitId);
-          
-          if (task && unit) {
-            await updateUnitScore(unit.id, unit.score + task.points);
+          const unitSaved = localStorage.getItem('authSession');
+          if (unitSaved) {
+            const session: SavedSession = JSON.parse(unitSaved);
+            if (Date.now() < session.expiresAt) {
+              setCurrentUser(session.user);
+            } else {
+              localStorage.removeItem('authSession');
+            }
           }
         }
-
-        await fetchSubmissions();
-      } catch (error) {
-        console.error('Error validating task:', error);
-        throw error;
-      }
-    };
-
-    const updateUnitScore = async (unitId: string, newScore: number) => {
-      try {
-        const client = supabase;
-        const { error } = await client
-          .from('units')
-          .update({ score: newScore })
-          .eq('id', unitId);
-
-        if (error) throw error;
-
-        // Update local state immediately
-        setUnits(prevUnits => 
-          prevUnits.map(unit => 
-            unit.id === unitId ? { ...unit, score: newScore } : unit
-          )
-        );
-        
-        // Refetch units to ensure we have the latest data
-        await fetchUnits();
-      } catch (error) {
-        console.error('Error updating unit score:', error);
-        throw error;
-      }
-    };
-
-    const updateUnitLogo = async (unitId: string, newLogo: string) => {
-      try {
-        const { error } = await supabase
-          .from('units')
-          .update({ logo: newLogo || null })
-          .eq('id', unitId);
-
-        if (error) throw error;
-        await fetchUnits();
-      } catch (error) {
-        console.error('Error updating unit logo:', error);
-        throw error;
-      }
-    };
-
-    const submitWeeklyAttendance = async (attendanceData: Omit<WeeklyAttendance, 'id' | 'submittedAt' | 'status'>): Promise<boolean> => {
-      try {
-        const { error } = await supabase
-          .from('weekly_attendances')
-          .insert({
-            unit_id: attendanceData.unitId,
-            date: attendanceData.date,
-            present_members: attendanceData.presentMembers,
-            punctual_count: attendanceData.punctualCount,
-            neckerchief_count: attendanceData.neckerchiefCount,
-            uniform_count: attendanceData.uniformCount,
-            brought_flag: attendanceData.broughtFlag,
-            brought_bible: attendanceData.broughtBible,
-            photo_url: attendanceData.photoUrl,
-            score: attendanceData.score,
-            status: 'pending'
-          });
-
-        if (error) throw error;
-        await fetchAttendances();
-        return true;
-      } catch (error) {
-        console.error('Error submitting attendance:', error);
-        return false;
-      }
-    };
-
-    const validateAttendance = async (attendanceId: string, approved: boolean, customScore?: number) => {
-      try {
-        const attendance = attendances.find(a => a.id === attendanceId);
-        if (!attendance) return;
-
-        // Use custom score if provided, otherwise use original score
-        const finalScore = customScore !== undefined ? customScore : attendance.score;
-
-        // Update attendance status and score in database
-        const { error: attendanceError } = await supabase
-          .from('weekly_attendances')
-          .update({ 
-            status: approved ? 'validated' : 'rejected',
-            score: finalScore
-          })
-          .eq('id', attendanceId);
-
-        if (attendanceError) throw attendanceError;
-
-        // If approved, update unit score
-        if (approved) {
-          const unit = units.find(u => u.id === attendance.unitId);
-          if (unit) {
-            await updateUnitScore(unit.id, unit.score + finalScore);
-          }
-        }
-
-        await fetchAttendances();
-      } catch (error) {
-        console.error('Error validating attendance:', error);
-        throw error;
-      }
-    };
-
-    const toggleAttendanceFormAvailability = async (enabled: boolean, enabledUnits: string[] = []): Promise<boolean> => {
-      try {
-        console.log('Toggling form availability:', enabled, enabledUnits);
-        
-        const { data, error } = await supabase
-          .from('form_settings')
-          .upsert({
-            form_type: 'weekly_attendance',
-            is_enabled: enabled,
-            enabled_units: enabledUnits.length > 0 ? enabledUnits : [],
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'form_type'
-          })
-          .select();
-
-        if (error) {
-          console.error('Error in toggleAttendanceFormAvailability:', error);
-          throw error;
-        }
-        
-        console.log('Form settings updated:', data);
-        await fetchFormSettings();
-        return true;
-      } catch (error) {
-        console.error('Error toggling form availability:', error);
-        return false;
-      }
-    };
-
-    const toggleRankingVisibility = async (): Promise<void> => {
-      try {
-        const newVisibility = !rankingVisible;
-        
-        const { error } = await supabase
-          .from('form_settings')
-          .upsert({
-            form_type: 'ranking_visibility',
-            is_enabled: newVisibility,
-            enabled_units: [],
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'form_type'
-          });
-
-        if (error) throw error;
-        
-        setRankingVisible(newVisibility);
-        console.log('Ranking visibility updated:', newVisibility);
-      } catch (error) {
-        console.error('Error toggling ranking visibility:', error);
-        throw error;
-      }
-    };
-
-    // Utility function to check if a task is available for a specific unit
-    const isTaskAvailableForUnit = (task: Task, unitId: string): boolean => {
-      // If targetUnits is null/undefined or empty, task is available for all units (global task)
-      if (!task.targetUnits || task.targetUnits.length === 0) {
-        return true;
-      }
-      // Check if unitId is in the targetUnits array (targeted task)
-      return task.targetUnits.includes(unitId);
-    };
-
-    // Function to get tasks available for a specific unit
-    const getTasksForUnit = (unitId: string): Task[] => {
-      return tasks.filter(task => isTaskAvailableForUnit(task, unitId));
-    };
-
-    // Function to get tasks with history for unit dashboard (includes removed tasks if completed)
-    const getTasksWithHistoryForUnit = async (unitId: string): Promise<{
-      available: Task[];
-      completed: Task[];
-      pending: Task[];
-    }> => {
-      try {
-        // Buscar submissões da unidade
-        const unitSubmissions = submissions.filter(sub => sub.unitId === unitId);
-        const completedSubmissionTaskIds = new Set(
-          unitSubmissions.filter(sub => sub.status === 'completed').map(sub => sub.taskId)
-        );
-        const pendingSubmissionTaskIds = new Set(
-          unitSubmissions.filter(sub => sub.status === 'pending').map(sub => sub.taskId)
-        );
-
-        // Buscar tarefas normais
-        const { data: normalTasks, error: normalError } = await supabase
-          .from('tasks')
-          .select('*')
-          .not('deadline', 'eq', '1900-01-01T00:00:00.000Z');
-
-        if (normalError) throw normalError;
-
-        // Buscar tarefas arquivadas que foram concluídas por esta unidade
-        let archivedCompletedTasks: any[] = [];
-        if (completedSubmissionTaskIds.size > 0) {
-          const { data: archivedTasks, error: archivedError } = await supabase
-            .from('tasks')
-            .select('*')
-            .eq('deadline', '1900-01-01T00:00:00.000Z')
-            .in('id', Array.from(completedSubmissionTaskIds));
-
-          if (archivedError) {
-            console.warn('Error fetching archived completed tasks:', archivedError);
-          } else {
-            archivedCompletedTasks = archivedTasks || [];
-          }
-        }
-
-        const allTasks = [...(normalTasks || []), ...archivedCompletedTasks];
-        const allTransformedTasks = allTasks.map(transformTask);
-        
-        // Separar tarefas por categoria
-        const available = allTransformedTasks.filter(task => 
-          task.deadline !== '1900-01-01T00:00:00.000Z' && 
-          isTaskAvailableForUnit(task, unitId) && 
-          !completedSubmissionTaskIds.has(task.id) && 
-          !pendingSubmissionTaskIds.has(task.id)
-        );
-
-        const completed = allTransformedTasks.filter(task => 
-          completedSubmissionTaskIds.has(task.id)
-        );
-
-        const pending = allTransformedTasks.filter(task => 
-          task.deadline !== '1900-01-01T00:00:00.000Z' &&
-          pendingSubmissionTaskIds.has(task.id)
-        );
-
-        return { available, completed, pending };
-      } catch (error) {
-        console.error('Error fetching tasks with history:', error);
-        // Fallback para método normal se houver erro
-        const availableTasks = getTasksForUnit(unitId);
-        const unitSubmissions = submissions.filter(sub => sub.unitId === unitId);
-        const completedTaskIds = new Set(
-          unitSubmissions.filter(sub => sub.status === 'completed').map(sub => sub.taskId)
-        );
-        const pendingTaskIds = new Set(
-          unitSubmissions.filter(sub => sub.status === 'pending').map(sub => sub.taskId)
-        );
-
-        return {
-          available: availableTasks.filter(task => 
-            !completedTaskIds.has(task.id) && !pendingTaskIds.has(task.id)
-          ),
-          completed: availableTasks.filter(task => completedTaskIds.has(task.id)),
-          pending: availableTasks.filter(task => pendingTaskIds.has(task.id))
-        };
-      }
-    };
-
-    // Alternative storage for task targeting when migration is not applied
-    const storeTaskTargeting = async (taskId: string, targetUnits: string[]) => {
-      try {
-        // Store in localStorage as fallback
-        const taskTargeting = JSON.parse(localStorage.getItem('taskTargeting') || '{}');
-        taskTargeting[taskId] = targetUnits;
-        localStorage.setItem('taskTargeting', JSON.stringify(taskTargeting));
-        console.log('Task targeting stored in localStorage:', { taskId, targetUnits });
-      } catch (error) {
-        console.error('Error storing task targeting:', error);
-      }
-    };
-
-    const resetAllStatistics = async (): Promise<boolean> => {
-      try {
-        // Delete all task submissions
-        await supabase.from('task_submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        
-        // Delete all attendances
-        await supabase.from('weekly_attendances').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        
-        // Delete all tasks
-        await supabase.from('tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        
-                // Reset all unit scores to 0
-        await supabase.from('units').update({ score: 0 }).neq('id', '00000000-0000-0000-0000-000000000000');
-        
-        // Clear task targeting from localStorage
-        localStorage.removeItem('taskTargeting');
-        
-        // Refresh all data
-        await Promise.all([
-          fetchUnits(),
-          fetchTasks(),
-          fetchSubmissions(),
-          fetchAttendances()
-        ]);
-        
-        return true;
-      } catch (error) {
-        console.error('Error resetting statistics:', error);
-        return false;
-      }
-    };
-
-    const restoreAdminSession = async (): Promise<boolean> => {
-      try {
-        const saved = localStorage.getItem('adminAuthSession');
-        if (saved) {
-          const session: SavedAdminSession = JSON.parse(saved);
-          
-          // Check if session hasn't expired
-          if (Date.now() < session.expiresAt) {
-            setCurrentUser(session.user);
-            return true; // Admin session restored
-          } else {
-            localStorage.removeItem('adminAuthSession'); // Clear expired session
-          }
-        }
-      } catch (error) {
-        console.error('Error restoring admin session:', error);
-        localStorage.removeItem('adminAuthSession');
-      }
-      return false; // No valid admin session
-    };
-
-    const restoreSession = async (): Promise<boolean> => {
-      try {
-        // Try to restore admin session first
-        const adminSessionRestored = await restoreAdminSession();
-        if (adminSessionRestored) {
-          return true;
-        }
-
-        // Then try to restore unit session
-        const saved = localStorage.getItem('authSession');
-        if (saved) {
-          const session: SavedSession = JSON.parse(saved);
-          
-          // Check if session hasn't expired
-          if (Date.now() < session.expiresAt) {
-            setCurrentUser(session.user);
-            return true; // Session restored
-          } else {
-            localStorage.removeItem('authSession'); // Clear expired session
-          }
-        }
-      } catch (error) {
-        console.error('Error restoring session:', error);
+      } catch {
         localStorage.removeItem('authSession');
         localStorage.removeItem('adminAuthSession');
       }
-      return false; // No valid session
+
+      await Promise.all([
+        fetchUnits(), fetchTasks(), fetchSubmissions(),
+        fetchAttendances(), fetchFormSettings(), fetchRankingSettings()
+      ]);
+      setLoading(false);
     };
+    initializeData();
+  }, [fetchUnits, fetchTasks, fetchSubmissions, fetchAttendances, fetchFormSettings, fetchRankingSettings]);
 
-    useEffect(() => {
-      const initializeData = async () => {
-        setLoading(true);
-        
-        // Try to restore session first
-        await restoreSession();
-        
-        // Load data regardless of session restoration
-        await Promise.all([
-          fetchUnits(),
-          fetchTasks(),
-          fetchSubmissions(),
-          fetchAttendances(),
-          fetchFormSettings(),
-          fetchRankingSettings()
-        ]);
-        
-        setLoading(false);
-      };
+  const attendanceFormEnabled = useMemo(() => formSettings?.isEnabled || false, [formSettings]);
 
-      initializeData();
-    }, []);
+  const value = useMemo(() => ({
+    currentUser, units, tasks, submissions, attendances, formSettings,
+    attendanceFormEnabled, rankingVisible, loading, setCurrentUser,
+    login, adminLogin, logout, createTask, deleteTask, submitTask,
+    validateTask, updateUnitScore, updateUnitLogo, submitWeeklyAttendance,
+    validateAttendance, toggleAttendanceFormAvailability, toggleRankingVisibility,
+    resetAllStatistics, fetchUnits, isTaskAvailableForUnit, getTasksForUnit,
+    getTasksWithHistoryForUnit, isFormEnabledForUnit
+  }), [
+    currentUser, units, tasks, submissions, attendances, formSettings,
+    attendanceFormEnabled, rankingVisible, loading, login, adminLogin,
+    logout, createTask, deleteTask, submitTask, validateTask, updateUnitScore,
+    updateUnitLogo, submitWeeklyAttendance, validateAttendance,
+    toggleAttendanceFormAvailability, toggleRankingVisibility, resetAllStatistics,
+    fetchUnits, isTaskAvailableForUnit, getTasksForUnit, getTasksWithHistoryForUnit,
+    isFormEnabledForUnit
+  ]);
 
-    const attendanceFormEnabled = formSettings?.isEnabled || false;
-
-    const value = {
-      currentUser,
-      units,
-      tasks,
-      submissions,
-      attendances,
-      formSettings,
-      attendanceFormEnabled,
-      rankingVisible,
-      loading,
-      setCurrentUser,
-      login,
-      adminLogin,
-      logout,
-      createTask,
-      deleteTask,
-      submitTask,
-      validateTask,
-      updateUnitScore,
-      updateUnitLogo,
-      submitWeeklyAttendance,
-      validateAttendance,
-      toggleAttendanceFormAvailability,
-      toggleRankingVisibility,
-      resetAllStatistics,
-      fetchUnits,
-      isTaskAvailableForUnit,
-      getTasksForUnit,
-      getTasksWithHistoryForUnit,
-      isFormEnabledForUnit
-    };
-
-    
-    
-    return (
-      <AppContext.Provider value={value}>
-        {children}
-      </AppContext.Provider>
-    );
-  } catch (error) {
-    console.error('Error in AppProvider:', error);
-    return (
-      <div style={{ padding: '20px', backgroundColor: '#fee', color: '#c33' }}>
-        <h2>Erro no AppProvider</h2>
-        <p>Ocorreu um erro na inicialização do contexto da aplicação:</p>
-        <pre>{error?.toString()}</pre>
-      </div>
-    );
-  }
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
 };
