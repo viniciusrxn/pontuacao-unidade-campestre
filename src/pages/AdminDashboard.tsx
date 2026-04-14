@@ -95,9 +95,10 @@ const AdminDashboard = () => {
     try {
       await createTask(taskData);
       toast({ title: "Tarefa criada!", description: "Tarefa criada com sucesso." });
-    } catch {
-      toast({ title: "Erro ao criar tarefa", description: "Nao foi possivel criar a tarefa.", variant: "destructive" });
-      throw new Error('Failed to create task');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Nao foi possivel criar a tarefa.";
+      console.error('Erro ao criar tarefa:', error);
+      toast({ title: "Erro ao criar tarefa", description: msg, variant: "destructive" });
     }
   };
 

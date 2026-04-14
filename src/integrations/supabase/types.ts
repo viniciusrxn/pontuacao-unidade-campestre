@@ -7,13 +7,32 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
-  }
   public: {
     Tables: {
+      admin_credentials: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       form_settings: {
         Row: {
           enabled_units: string[] | null
@@ -71,57 +90,104 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_credentials: {
+      polls: {
         Row: {
-          id: string
-          username: string
-          password_hash: string
+          allow_multiple_votes: boolean
           created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          options: Json
+          status: string
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          username: string
-          password_hash: string
+          allow_multiple_votes?: boolean
           created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          options?: Json
+          status?: string
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          username?: string
-          password_hash?: string
+          allow_multiple_votes?: boolean
           created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          options?: Json
+          status?: string
+          title?: string
           updated_at?: string
         }
         Relationships: []
       }
-      task_submissions: {
+      score_history: {
         Row: {
+          change_amount: number
           id: string
-          task_id: string
+          reason: string
+          recorded_at: string
+          score: number
           unit_id: string
-          proof: string
-          status: string
-          admin_feedback: string | null
-          submitted_at: string
         }
         Insert: {
+          change_amount?: number
           id?: string
-          task_id: string
+          reason?: string
+          recorded_at?: string
+          score: number
           unit_id: string
-          proof: string
-          status?: string
-          admin_feedback?: string | null
-          submitted_at?: string
         }
         Update: {
+          change_amount?: number
           id?: string
-          task_id?: string
+          reason?: string
+          recorded_at?: string
+          score?: number
           unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "score_history_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_submissions: {
+        Row: {
+          admin_feedback: string | null
+          id: string
+          proof: string
+          status: string
+          submitted_at: string
+          task_id: string
+          unit_id: string
+        }
+        Insert: {
+          admin_feedback?: string | null
+          id?: string
+          proof: string
+          status?: string
+          submitted_at?: string
+          task_id: string
+          unit_id: string
+        }
+        Update: {
+          admin_feedback?: string | null
+          id?: string
           proof?: string
           status?: string
-          admin_feedback?: string | null
           submitted_at?: string
+          task_id?: string
+          unit_id?: string
         }
         Relationships: [
           {
@@ -142,42 +208,42 @@ export type Database = {
       }
       tasks: {
         Row: {
-          id: string
-          title: string
-          description: string | null
-          points: number
-          deadline: string
-          difficulty: string
           category: string
-          target_units: string[] | null
-          status: string
           created_at: string
+          deadline: string
+          description: string | null
+          difficulty: string
+          id: string
+          points: number
+          status: string
+          target_units: string[] | null
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          title: string
-          description?: string | null
-          points: number
-          deadline: string
-          difficulty?: string
           category?: string
-          target_units?: string[] | null
-          status?: string
           created_at?: string
+          deadline: string
+          description?: string | null
+          difficulty?: string
+          id?: string
+          points: number
+          status?: string
+          target_units?: string[] | null
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          title?: string
-          description?: string | null
-          points?: number
-          deadline?: string
-          difficulty?: string
           category?: string
-          target_units?: string[] | null
-          status?: string
           created_at?: string
+          deadline?: string
+          description?: string | null
+          difficulty?: string
+          id?: string
+          points?: number
+          status?: string
+          target_units?: string[] | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -217,49 +283,14 @@ export type Database = {
           },
         ]
       }
-      score_history: {
-        Row: {
-          id: string
-          unit_id: string
-          score: number
-          change_amount: number
-          reason: string
-          recorded_at: string
-        }
-        Insert: {
-          id?: string
-          unit_id: string
-          score: number
-          change_amount?: number
-          reason?: string
-          recorded_at?: string
-        }
-        Update: {
-          id?: string
-          unit_id?: string
-          score?: number
-          change_amount?: number
-          reason?: string
-          recorded_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "score_history_unit_id_fkey"
-            columns: ["unit_id"]
-            isOneToOne: false
-            referencedRelation: "units"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       units: {
         Row: {
+          created_at: string
           id: string
-          name: string
           logo: string | null
+          name: string
           password: string
           score: number
-          created_at: string
           updated_at: string
         }
         Insert: {
@@ -284,52 +315,52 @@ export type Database = {
       }
       weekly_attendances: {
         Row: {
-          id: string
-          unit_id: string
+          admin_feedback: string | null
+          brought_bible: boolean
+          brought_flag: boolean
           date: string
+          id: string
+          neckerchief_count: number
+          photo_url: string | null
           present_members: string[] | null
           punctual_count: number
-          neckerchief_count: number
-          uniform_count: number
-          brought_flag: boolean
-          brought_bible: boolean
-          photo_url: string | null
           score: number
           status: string
-          admin_feedback: string | null
           submitted_at: string
+          uniform_count: number
+          unit_id: string
         }
         Insert: {
-          id?: string
-          unit_id: string
+          admin_feedback?: string | null
+          brought_bible?: boolean
+          brought_flag?: boolean
           date: string
+          id?: string
+          neckerchief_count?: number
+          photo_url?: string | null
           present_members?: string[] | null
           punctual_count?: number
-          neckerchief_count?: number
-          uniform_count?: number
-          brought_flag?: boolean
-          brought_bible?: boolean
-          photo_url?: string | null
           score?: number
           status?: string
-          admin_feedback?: string | null
           submitted_at?: string
+          uniform_count?: number
+          unit_id: string
         }
         Update: {
-          id?: string
-          unit_id?: string
+          admin_feedback?: string | null
+          brought_bible?: boolean
+          brought_flag?: boolean
           date?: string
+          id?: string
+          neckerchief_count?: number
+          photo_url?: string | null
           present_members?: string[] | null
           punctual_count?: number
-          neckerchief_count?: number
-          uniform_count?: number
-          brought_flag?: boolean
-          brought_bible?: boolean
-          photo_url?: string | null
           score?: number
           status?: string
-          admin_feedback?: string | null
           submitted_at?: string
+          uniform_count?: number
+          unit_id?: string
         }
         Relationships: [
           {
@@ -359,7 +390,7 @@ export type Database = {
         Returns: string
       }
       delete_unit: { Args: { unit_id_param: string }; Returns: boolean }
-      get_system_stats: { Args: never; Returns: Json }
+      get_system_stats: { Args: Record<PropertyKey, never>; Returns: Json }
       is_form_enabled_for_unit: {
         Args: { form_name: string; unit_id_param: string }
         Returns: boolean
@@ -378,25 +409,23 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -414,16 +443,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -439,16 +468,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -464,16 +493,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -481,22 +510,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof Database
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof Database
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const
