@@ -92,7 +92,7 @@ const transformSubmission = (submission: SupabaseTaskSubmission): TaskSubmission
   proof: submission.proof,
   submittedAt: submission.submitted_at,
   status: submission.status as 'pending' | 'completed' | 'rejected',
-  adminFeedback: (submission as any).admin_feedback || undefined
+  adminFeedback: submission.admin_feedback || undefined
 });
 
 const transformAttendance = (attendance: SupabaseWeeklyAttendance): WeeklyAttendance => ({
@@ -109,7 +109,7 @@ const transformAttendance = (attendance: SupabaseWeeklyAttendance): WeeklyAttend
   submittedAt: attendance.submitted_at,
   status: attendance.status as 'pending' | 'validated' | 'rejected',
   score: attendance.score,
-  adminFeedback: (attendance as any).admin_feedback || undefined
+  adminFeedback: attendance.admin_feedback || undefined
 });
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {

@@ -71,38 +71,26 @@ export type Database = {
         }
         Relationships: []
       }
-      polls: {
+      admin_credentials: {
         Row: {
-          allow_multiple_votes: boolean
-          created_at: string
-          description: string | null
-          expires_at: string | null
           id: string
-          options: Json
-          status: string
-          title: string
+          username: string
+          password_hash: string
+          created_at: string
           updated_at: string
         }
         Insert: {
-          allow_multiple_votes?: boolean
-          created_at?: string
-          description?: string | null
-          expires_at?: string | null
           id?: string
-          options?: Json
-          status?: string
-          title: string
+          username: string
+          password_hash: string
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          allow_multiple_votes?: boolean
-          created_at?: string
-          description?: string | null
-          expires_at?: string | null
           id?: string
-          options?: Json
-          status?: string
-          title?: string
+          username?: string
+          password_hash?: string
+          created_at?: string
           updated_at?: string
         }
         Relationships: []
@@ -110,27 +98,30 @@ export type Database = {
       task_submissions: {
         Row: {
           id: string
-          proof: string
-          status: string
-          submitted_at: string
           task_id: string
           unit_id: string
+          proof: string
+          status: string
+          admin_feedback: string | null
+          submitted_at: string
         }
         Insert: {
           id?: string
-          proof: string
-          status?: string
-          submitted_at?: string
           task_id: string
           unit_id: string
+          proof: string
+          status?: string
+          admin_feedback?: string | null
+          submitted_at?: string
         }
         Update: {
           id?: string
-          proof?: string
-          status?: string
-          submitted_at?: string
           task_id?: string
           unit_id?: string
+          proof?: string
+          status?: string
+          admin_feedback?: string | null
+          submitted_at?: string
         }
         Relationships: [
           {
@@ -151,39 +142,42 @@ export type Database = {
       }
       tasks: {
         Row: {
-          category: string
-          created_at: string
-          deadline: string
-          description: string | null
-          difficulty: string
           id: string
-          points: number
-          status: string
           title: string
+          description: string | null
+          points: number
+          deadline: string
+          difficulty: string
+          category: string
+          target_units: string[] | null
+          status: string
+          created_at: string
           updated_at: string
         }
         Insert: {
-          category?: string
-          created_at?: string
-          deadline: string
-          description?: string | null
-          difficulty?: string
           id?: string
-          points: number
-          status?: string
           title: string
+          description?: string | null
+          points: number
+          deadline: string
+          difficulty?: string
+          category?: string
+          target_units?: string[] | null
+          status?: string
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          category?: string
-          created_at?: string
-          deadline?: string
-          description?: string | null
-          difficulty?: string
           id?: string
-          points?: number
-          status?: string
           title?: string
+          description?: string | null
+          points?: number
+          deadline?: string
+          difficulty?: string
+          category?: string
+          target_units?: string[] | null
+          status?: string
+          created_at?: string
           updated_at?: string
         }
         Relationships: []
@@ -223,14 +217,49 @@ export type Database = {
           },
         ]
       }
+      score_history: {
+        Row: {
+          id: string
+          unit_id: string
+          score: number
+          change_amount: number
+          reason: string
+          recorded_at: string
+        }
+        Insert: {
+          id?: string
+          unit_id: string
+          score: number
+          change_amount?: number
+          reason?: string
+          recorded_at?: string
+        }
+        Update: {
+          id?: string
+          unit_id?: string
+          score?: number
+          change_amount?: number
+          reason?: string
+          recorded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "score_history_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       units: {
         Row: {
-          created_at: string
           id: string
-          logo: string | null
           name: string
+          logo: string | null
           password: string
           score: number
+          created_at: string
           updated_at: string
         }
         Insert: {
@@ -255,49 +284,52 @@ export type Database = {
       }
       weekly_attendances: {
         Row: {
-          brought_bible: boolean
-          brought_flag: boolean
-          date: string
           id: string
-          neckerchief_count: number
-          photo_url: string | null
+          unit_id: string
+          date: string
           present_members: string[] | null
           punctual_count: number
+          neckerchief_count: number
+          uniform_count: number
+          brought_flag: boolean
+          brought_bible: boolean
+          photo_url: string | null
           score: number
           status: string
+          admin_feedback: string | null
           submitted_at: string
-          uniform_count: number
-          unit_id: string
         }
         Insert: {
-          brought_bible?: boolean
-          brought_flag?: boolean
-          date: string
           id?: string
-          neckerchief_count?: number
-          photo_url?: string | null
+          unit_id: string
+          date: string
           present_members?: string[] | null
           punctual_count?: number
+          neckerchief_count?: number
+          uniform_count?: number
+          brought_flag?: boolean
+          brought_bible?: boolean
+          photo_url?: string | null
           score?: number
           status?: string
+          admin_feedback?: string | null
           submitted_at?: string
-          uniform_count?: number
-          unit_id: string
         }
         Update: {
-          brought_bible?: boolean
-          brought_flag?: boolean
-          date?: string
           id?: string
-          neckerchief_count?: number
-          photo_url?: string | null
+          unit_id?: string
+          date?: string
           present_members?: string[] | null
           punctual_count?: number
+          neckerchief_count?: number
+          uniform_count?: number
+          brought_flag?: boolean
+          brought_bible?: boolean
+          photo_url?: string | null
           score?: number
           status?: string
+          admin_feedback?: string | null
           submitted_at?: string
-          uniform_count?: number
-          unit_id?: string
         }
         Relationships: [
           {

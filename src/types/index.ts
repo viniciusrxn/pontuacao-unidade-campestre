@@ -75,19 +75,6 @@ export interface NewsItem {
 
 
 
-export interface SystemNotification {
-  id: string;
-  unitId?: string;
-  title: string;
-  message: string;
-  type: 'task_created' | 'attendance_approved' | 'news_published' | 'poll_created' | 'general';
-  icon?: string;
-  isRead: boolean;
-  createdAt: string;
-  expiresAt?: string;
-  actionUrl?: string;
-}
-
 // Supabase types with snake_case
 export interface SupabaseUnit {
   id: string;
@@ -96,19 +83,21 @@ export interface SupabaseUnit {
   password: string;
   score: number;
   created_at: string;
+  updated_at: string;
 }
 
 export interface SupabaseTask {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   points: number;
   deadline: string;
   status: string;
   created_at: string;
-  difficulty?: string;
-  category?: string;
-  target_units?: string[];
+  updated_at: string;
+  difficulty: string;
+  category: string;
+  target_units: string[] | null;
 }
 
 export interface SupabaseTaskSubmission {
@@ -151,15 +140,11 @@ export interface SupabaseNewsItem {
 
 
 
-export interface SupabaseSystemNotification {
+export interface SupabaseScoreHistory {
   id: string;
-  unit_id?: string;
-  title: string;
-  message: string;
-  type: string;
-  icon?: string;
-  is_read: boolean;
-  created_at: string;
-  expires_at?: string;
-  action_url?: string;
+  unit_id: string;
+  score: number;
+  change_amount: number;
+  reason: string;
+  recorded_at: string;
 }

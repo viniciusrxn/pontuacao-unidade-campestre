@@ -27,15 +27,15 @@ const ScoreTimeline: React.FC<Props> = ({ unitId, unitName }) => {
           .from('score_history')
           .select('*')
           .eq('unit_id', unitId)
-          .order('changed_at', { ascending: true });
+          .order('recorded_at', { ascending: true });
 
         if (error) throw error;
 
         if (history && history.length > 0) {
-          const entries: ScoreEntry[] = history.map((h: any) => ({
-            date: new Date(h.changed_at).toISOString(),
-            score: h.new_score,
-            label: new Date(h.changed_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+          const entries: ScoreEntry[] = history.map((h) => ({
+            date: new Date(h.recorded_at).toISOString(),
+            score: h.score,
+            label: new Date(h.recorded_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
           }));
           setData(entries);
         }
