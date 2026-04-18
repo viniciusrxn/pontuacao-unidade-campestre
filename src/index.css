@@ -126,4 +126,13 @@
       -ms-overflow-style: none;
     }
   }
+
+  /* Utility to hide scrollbar while keeping scroll behavior (tabs, carrosséis) */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
