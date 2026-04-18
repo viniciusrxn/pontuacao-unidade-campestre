@@ -80,29 +80,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Enhanced Header */}
       <header className="bg-gradient-to-r from-primary via-primary/95 to-secondary shadow-lg sticky top-0 z-50 border-b border-white/10">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16 md:h-20">
+          <div className="flex items-center justify-between h-14 md:h-20">
             {/* Logo Section */}
             <Link 
               to="/" 
-              className="flex items-center space-x-2 md:space-x-3 text-white hover:text-white/90 transition-colors group"
+              className="flex items-center space-x-2 md:space-x-3 text-white hover:text-white/90 transition-colors group min-w-0"
             >
-              <div className="relative">
+              <div className="relative shrink-0">
             <img
               src="https://i.imgur.com/KYU3KX5.png"
               alt="Ranking Unidade"
-                  className="h-8 md:h-12 w-auto transition-transform group-hover:scale-105" 
+                  className="h-7 md:h-12 w-auto transition-transform group-hover:scale-105"
+                  loading="eager"
                 />
                 <div className="absolute inset-0 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-lg" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-lg md:text-xl font-bold tracking-tight">
-                  Ranking Unidade
+              <div className="flex flex-col min-w-0">
+                <span className="text-base md:text-xl font-bold tracking-tight truncate">
+                  {isMobile ? getPageTitle() : 'Ranking Unidade'}
                 </span>
-                <span className="text-xs md:text-sm text-white/80 hidden sm:block">
+                <span className="text-xs md:text-sm text-white/80 hidden sm:block truncate">
                   {getPageTitle()}
                 </span>
               </div>
           </Link>
+
 
             {/* Desktop Navigation */}
             {!isMobile && (
