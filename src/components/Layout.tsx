@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import MobileBottomNav from "./MobileBottomNav";
 
 interface LayoutProps {
   children: React.ReactNode;
