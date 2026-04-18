@@ -383,9 +383,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto py-4 md:py-8 px-4 min-h-[calc(100vh-200px)]">
+      <main className="container mx-auto py-4 md:py-8 px-4 min-h-[calc(100vh-200px)] pb-20 md:pb-8">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <MobileBottomNav onMenuClick={() => setMobileMenuOpen(true)} />
+      )}
 
       {/* Enhanced Footer */}
       <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-8 mt-12">
