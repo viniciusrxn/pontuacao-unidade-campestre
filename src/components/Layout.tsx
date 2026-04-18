@@ -242,19 +242,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             )}
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu (Sheet controlado, abre via bottom nav) */}
             {isMobile && (
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:text-white hover:bg-white/20 p-2"
-                  >
-                    <Menu className="h-6 w-6" />
-                  </Button>
-                </SheetTrigger>
+                {currentUser?.type === 'unit' && currentUnit && (
+                  <div className="flex items-center gap-2 bg-white/10 rounded-full pl-1 pr-2.5 py-1">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={currentUnit?.logo} />
+                      <AvatarFallback className="bg-white/20 text-white text-[10px]">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-semibold text-white">{currentUnit.score} pts</span>
+                  </div>
+                )}
                 <SheetContent side="right" className="w-80 sm:w-96">
+
                   <SheetHeader className="text-left pb-4">
                     <SheetTitle className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
                       <img
