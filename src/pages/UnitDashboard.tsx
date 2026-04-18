@@ -322,58 +322,59 @@ const UnitDashboard = () => {
         )}
 
         <Tabs defaultValue="available" className="mb-4 md:mb-6" onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 w-full gap-2 p-1 bg-white rounded-xl shadow-sm">
-            <TabsTrigger 
-              value="available" 
-              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
+          <TabsList className="flex md:grid md:grid-cols-5 w-full gap-2 p-1 bg-white rounded-xl shadow-sm overflow-x-auto md:overflow-visible no-scrollbar snap-x snap-mandatory">
+            <TabsTrigger
+              value="available"
+              className="relative flex-shrink-0 md:flex-shrink snap-start flex flex-col items-center justify-center gap-1 py-2 px-3 text-xs min-w-[88px] md:min-w-0 min-h-[60px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
               <ListTodo className="w-5 h-5" />
               <span className="font-medium">Disponíveis</span>
               {availableTasks.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold border-2 border-white">
                   {availableTasks.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger 
-              value="pending" 
-              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
+            <TabsTrigger
+              value="pending"
+              className="relative flex-shrink-0 md:flex-shrink snap-start flex flex-col items-center justify-center gap-1 py-2 px-3 text-xs min-w-[88px] md:min-w-0 min-h-[60px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
               <Eye className="w-5 h-5" />
               <span className="font-medium">Em Revisão</span>
               {pendingTasks.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold border-2 border-white">
                   {pendingTasks.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger 
-              value="completed" 
-              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
+            <TabsTrigger
+              value="completed"
+              className="relative flex-shrink-0 md:flex-shrink snap-start flex flex-col items-center justify-center gap-1 py-2 px-3 text-xs min-w-[88px] md:min-w-0 min-h-[60px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
               <CheckCircle2 className="w-5 h-5" />
               <span className="font-medium">Concluídas</span>
               {completedTasks.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] leading-none py-0.5 px-1.5 rounded-full font-bold border-2 border-white">
                   {completedTasks.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger 
-              value="stats" 
-              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
+            <TabsTrigger
+              value="stats"
+              className="relative flex-shrink-0 md:flex-shrink snap-start flex flex-col items-center justify-center gap-1 py-2 px-3 text-xs min-w-[88px] md:min-w-0 min-h-[60px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
               <TrendingUp className="w-5 h-5" />
               <span className="font-medium">Estatísticas</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="info" 
-              className="relative flex flex-col items-center justify-center gap-1 py-2 px-2 text-[10px] md:text-xs min-h-[56px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
+            <TabsTrigger
+              value="info"
+              className="relative flex-shrink-0 md:flex-shrink snap-start flex flex-col items-center justify-center gap-1 py-2 px-3 text-xs min-w-[88px] md:min-w-0 min-h-[60px] md:min-h-[50px] rounded-lg border border-gray-200 bg-white data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:border-primary transition-colors"
             >
               <Info className="w-5 h-5" />
               <span className="font-medium">Informações</span>
             </TabsTrigger>
           </TabsList>
+
 
           {/* Visão Geral movida para aba Estatísticas */}
           

@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import MobileBottomNav from "./MobileBottomNav";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -79,29 +80,31 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Enhanced Header */}
       <header className="bg-gradient-to-r from-primary via-primary/95 to-secondary shadow-lg sticky top-0 z-50 border-b border-white/10">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16 md:h-20">
+          <div className="flex items-center justify-between h-14 md:h-20">
             {/* Logo Section */}
             <Link 
               to="/" 
-              className="flex items-center space-x-2 md:space-x-3 text-white hover:text-white/90 transition-colors group"
+              className="flex items-center space-x-2 md:space-x-3 text-white hover:text-white/90 transition-colors group min-w-0"
             >
-              <div className="relative">
+              <div className="relative shrink-0">
             <img
               src="https://i.imgur.com/KYU3KX5.png"
               alt="Ranking Unidade"
-                  className="h-8 md:h-12 w-auto transition-transform group-hover:scale-105" 
+                  className="h-7 md:h-12 w-auto transition-transform group-hover:scale-105"
+                  loading="eager"
                 />
                 <div className="absolute inset-0 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-lg" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-lg md:text-xl font-bold tracking-tight">
-                  Ranking Unidade
+              <div className="flex flex-col min-w-0">
+                <span className="text-base md:text-xl font-bold tracking-tight truncate">
+                  {isMobile ? getPageTitle() : 'Ranking Unidade'}
                 </span>
-                <span className="text-xs md:text-sm text-white/80 hidden sm:block">
+                <span className="text-xs md:text-sm text-white/80 hidden sm:block truncate">
                   {getPageTitle()}
                 </span>
               </div>
           </Link>
+
 
             {/* Desktop Navigation */}
             {!isMobile && (
@@ -239,19 +242,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             )}
 
-            {/* Mobile Menu */}
+            {/* Mobile Menu (Sheet controlado, abre via bottom nav) */}
             {isMobile && (
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:text-white hover:bg-white/20 p-2"
-                  >
-                    <Menu className="h-6 w-6" />
-                  </Button>
-                </SheetTrigger>
+                {currentUser?.type === 'unit' && currentUnit && (
+                  <div className="flex items-center gap-2 bg-white/10 rounded-full pl-1 pr-2.5 py-1">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={currentUnit?.logo} />
+                      <AvatarFallback className="bg-white/20 text-white text-[10px]">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-semibold text-white">{currentUnit.score} pts</span>
+                  </div>
+                )}
                 <SheetContent side="right" className="w-80 sm:w-96">
+
                   <SheetHeader className="text-left pb-4">
                     <SheetTitle className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
                       <img
@@ -377,9 +383,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto py-4 md:py-8 px-4 min-h-[calc(100vh-200px)]">
+      <main className="container mx-auto py-4 md:py-8 px-4 min-h-[calc(100vh-200px)] pb-20 md:pb-8">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <MobileBottomNav onMenuClick={() => setMobileMenuOpen(true)} />
+      )}
 
       {/* Enhanced Footer */}
       <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-8 mt-12">
